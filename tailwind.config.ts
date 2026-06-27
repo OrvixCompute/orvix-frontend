@@ -49,7 +49,7 @@ const config: Config = {
         "4xl": ["36px", { lineHeight: "1.2", letterSpacing: "-0.02em" }],
       },
       maxWidth: {
-        page: "64rem", // 1024px max — narrower than typical
+        page: "80rem", // 1280px max — comfortable on widescreen
       },
       animation: {
         "fade-in": "fadeIn 0.4s ease-out",
