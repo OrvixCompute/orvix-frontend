@@ -23,9 +23,9 @@ export function NetworkStats() {
   const { data, isLoading, isError } = useGetNetworkStatsQuery();
 
   return (
-    <section className="grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-4">
+    <section className="grid grid-cols-2 gap-8 md:grid-cols-4">
       {STATS.map((stat) => (
-        <div key={stat.label} className="space-y-1.5">
+        <div key={stat.label} className="space-y-1.5 text-left">
           <div className="text-xs text-text-muted">{stat.label}</div>
           {isLoading ? (
             <Skeleton className="h-6 w-20" />

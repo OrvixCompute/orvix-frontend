@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -41,9 +40,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="flex h-full flex-col">
-      <Link href={routes.home} className="flex items-center gap-2 px-4 py-5">
-        <Image src="/logo.png" alt="Orvix" width={24} height={24} className="h-6 w-6" />
-        <span className="font-medium tracking-tight">orvix</span>
+      <Link
+        href={routes.home}
+        className="px-4 py-5 text-base font-medium tracking-tight text-text-primary"
+      >
+        orvix
       </Link>
 
       <nav className="flex-1 space-y-0.5 px-2">

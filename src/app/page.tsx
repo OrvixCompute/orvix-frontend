@@ -18,9 +18,11 @@ export default function LandingPage() {
       <main className="mx-auto max-w-page px-6">
         <Hero />
 
-        <div className="space-y-20 pb-8">
+        <div className="space-y-16 pb-8">
           <Reveal>
-            <NetworkFeed />
+            <div className="max-w-5xl">
+              <NetworkFeed />
+            </div>
           </Reveal>
 
           <Reveal>
@@ -28,11 +30,15 @@ export default function LandingPage() {
           </Reveal>
 
           <Reveal>
-            <NetworkStats />
+            <div className="max-w-5xl">
+              <NetworkStats />
+            </div>
           </Reveal>
 
           <Reveal>
-            <CodeExample />
+            <div className="max-w-5xl">
+              <CodeExample />
+            </div>
           </Reveal>
 
           <Reveal>

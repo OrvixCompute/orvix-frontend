@@ -72,7 +72,7 @@ export function NetworkFeed() {
         <span className="font-mono text-xs text-text-muted">network feed · live</span>
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-border bg-bg-secondary p-4 font-mono text-xs leading-relaxed">
+      <div className="overflow-x-auto rounded-md border border-border bg-bg-secondary px-4 py-3 font-mono text-xs leading-6">
         <div className="whitespace-pre text-text-secondary">
           <span className="select-none text-text-muted">$ </span>
           tail -f orvix/network/events.jsonl

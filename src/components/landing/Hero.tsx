@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { routes } from "@/lib/constants/routes";
 
 export function Hero() {
   return (
-    <section className="py-16 md:py-20">
+    <section className="py-16 md:py-24">
       <h1 className="max-w-3xl text-3xl font-medium tracking-tight md:text-4xl">
         Orvix: decentralized AI compute network
       </h1>
@@ -25,18 +26,14 @@ export function Hero() {
         </Link>
         .
       </p>
-      <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-        <Link
-          href={routes.playground}
-          className="inline-flex items-center gap-1.5 text-text-primary transition-colors hover:text-accent-hover"
-        >
-          Try the playground <ArrowRight size={14} />
+      <div className="mt-8 flex flex-wrap items-center gap-3">
+        <Link href={routes.playground}>
+          <Button variant="primary">
+            Try the playground <ArrowRight size={14} />
+          </Button>
         </Link>
-        <Link
-          href={routes.about}
-          className="text-text-secondary transition-colors hover:text-text-primary"
-        >
-          Learn about Orvix
+        <Link href={routes.about}>
+          <Button variant="ghost">Learn about Orvix</Button>
         </Link>
       </div>
     </section>
