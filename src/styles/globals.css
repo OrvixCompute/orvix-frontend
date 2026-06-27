@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Geist fonts are loaded via next/font in layout.tsx — they expose CSS variables
+   --font-geist-sans and --font-geist-mono which Tailwind reads from the
+   font-family config. */
+
+html {
+  background: #030303;
+  color: #fafafa;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+::selection {
+  background: #9945ff;
+  color: #fafafa;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #030303;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f1f1f;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2a2a2a;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Solana wallet-adapter modal — override the default purple/rounded theme to  */
+/* match the Orvix dark dev-tool aesthetic.                                     */
+/* -------------------------------------------------------------------------- */
+.wallet-adapter-modal-wrapper {
+  background: #0a0a0a !important;
+  border: 1px solid #1f1f1f !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  font-family: var(--font-geist-sans), system-ui, sans-serif !important;
+}
+
+.wallet-adapter-modal-title {
+  color: #fafafa !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+}
+
+.wallet-adapter-modal-button-close {
+  background: #141414 !important;
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button {
+  background: #0a0a0a !important;
+  border: 1px solid #1f1f1f !important;
+  border-radius: 6px !important;
+  color: #fafafa !important;
+  font-weight: 400 !important;
+  transition: border-color 0.15s ease;
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button:hover {
+  background: #141414 !important;
+  border-color: #2a2a2a !important;
+}
+
+.wallet-adapter-modal-list-more {
+  color: #a3a3a3 !important;
+}
+
+.wallet-adapter-button-trigger {
+  background: transparent !important;
+}
