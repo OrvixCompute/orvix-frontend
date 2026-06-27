@@ -1,9 +1,8 @@
 /** Centralized app routes. */
 export const routes = {
   home: "/",
-  // The playground is an authenticated app feature; the public link goes
-  // straight to the dashboard (AuthGuard prompts a wallet connect).
-  playground: "/dashboard/playground",
+  // Public, browser-based playground; signing in (header) enables Send.
+  playground: "/playground",
   docs: "/docs",
   providers: "/providers",
   staking: "/staking",
