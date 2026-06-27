@@ -5,6 +5,7 @@ import { PublicShell, PageIntro, Section } from "@/components/layout/PublicShell
 import { CodeExample } from "@/components/landing/CodeExample";
 import { CodeBlock } from "@/components/ui/CodeBlock";
 import { routes, dashboardRoutes } from "@/lib/constants/routes";
+import { config } from "@/lib/constants/config";
 
 export const metadata: Metadata = {
   title: "Documentation — Orvix",
@@ -82,7 +83,7 @@ export default function DocsPage() {
 
       <Section title="Make a request">
         <p>The base URL is the only thing that changes versus OpenAI.</p>
-        <CodeBlock language="bash" code={`Base URL:  https://api.orvix.xyz/v1`} />
+        <CodeBlock language="bash" code={`Base URL:  ${config.apiUrl}/v1`} />
         <div className="pt-2">
           <CodeExample />
         </div>
