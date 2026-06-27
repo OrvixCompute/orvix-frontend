@@ -3,10 +3,34 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Github, Twitter } from "lucide-react";
 import { InlineNav } from "@/components/ui/InlineNav";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { primaryNav, routes } from "@/lib/constants/routes";
+
+const SOCIALS = [
+  { label: "Twitter", href: "https://twitter.com/orvix", Icon: Twitter },
+  { label: "GitHub", href: "https://github.com/OrvixCompute/orvix", Icon: Github },
+];
+
+function Socials({ className }: { className?: string }) {
+  return (
+    <div className={className}>
+      {SOCIALS.map(({ label, href, Icon }) => (
+        <a
+          key={label}
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={label}
+          className="text-text-muted transition-colors hover:text-text-primary"
+        >
+          <Icon size={16} />
+        </a>
+      ))}
+    </div>
+  );
+}
 
 function Logo() {
   return (
@@ -33,8 +57,9 @@ export function Header() {
         <Logo />
 
         {/* Desktop nav */}
-        <div className="hidden items-center gap-6 md:flex">
+        <div className="hidden items-center gap-5 md:flex">
           <InlineNav items={primaryNav} />
+          <Socials className="flex items-center gap-3 border-l border-border pl-5" />
           <ConnectButton />
         </div>
 
@@ -63,6 +88,7 @@ export function Header() {
               </Link>
             ))}
             <ConnectButton className="mt-2 w-fit" />
+            <Socials className="mt-2 flex items-center gap-4" />
           </div>
         </div>
       )}
