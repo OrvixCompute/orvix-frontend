@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Menu, X, Github, Twitter } from "lucide-react";
 import { InlineNav } from "@/components/ui/InlineNav";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
@@ -33,11 +34,15 @@ function Socials({ className }: { className?: string }) {
 
 function Logo() {
   return (
-    <Link
-      href={routes.home}
-      className="text-base font-medium tracking-tight text-text-primary"
-    >
-      orvix
+    <Link href={routes.home} className="flex items-center" aria-label="Orvix home">
+      <Image
+        src="/orvix-wordmark.png"
+        alt="Orvix"
+        width={294}
+        height={59}
+        priority
+        className="h-6 w-auto"
+      />
     </Link>
   );
 }
