@@ -5,6 +5,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import bs58 from "bs58";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 import { setAuth, clearAuth } from "@/lib/store/slices/authSlice";
+import { addToast } from "@/lib/store/slices/uiSlice";
 import { useLazyGetChallengeQuery, useVerifySignatureMutation } from "@/lib/store/api/authApi";
 import { decodeJwtExpiry, saveAuth, clearStoredAuth } from "@/lib/auth/storage";
 
@@ -50,6 +51,7 @@ export function useAuth() {
       const exp = decodeJwtExpiry(jwt) ?? Date.now() + HOUR_MS;
       dispatch(setAuth({ token: jwt, user: me, expiresAt: exp }));
       saveAuth({ token: jwt, user: me, expiresAt: exp });
+      dispatch(addToast({ message: "Signed in.", variant: "success" }));
       return true;
     } catch (err) {
       // Wallet rejection, network error, or bad signature.
@@ -57,7 +59,9 @@ export function useAuth() {
         err && typeof err === "object" && "message" in err
           ? String((err as { message: unknown }).message)
           : "Sign-in failed. Please try again.";
-      setError(msg.includes("User rejected") ? "Signature request rejected." : msg);
+      const friendly = msg.includes("User rejected") ? "Signature request rejected." : msg;
+      setError(friendly);
+      dispatch(addToast({ message: friendly, variant: "error" }));
       return false;
     } finally {
       setIsLoading(false);
@@ -68,6 +72,7 @@ export function useAuth() {
     dispatch(clearAuth());
     clearStoredAuth();
     setError(null);
+    dispatch(addToast({ message: "Signed out.", variant: "info" }));
     try {
       await disconnect();
     } catch {
