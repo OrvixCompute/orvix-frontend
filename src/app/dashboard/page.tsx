@@ -7,6 +7,7 @@ import { useGetBalanceQuery, useGetTransactionsQuery } from "@/lib/store/api/bil
 import { useGetTierQuery } from "@/lib/store/api/accountApi";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { GetStarted } from "@/components/dashboard/GetStarted";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -40,6 +41,8 @@ export default function DashboardOverview() {
         title="Overview"
         subtitle={user ? `Signed in as ${truncateAddress(user.wallet)}` : undefined}
       />
+
+      <GetStarted />
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
