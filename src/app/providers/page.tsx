@@ -1,32 +1,35 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Github, ExternalLink } from "lucide-react";
 import { PublicShell, PageIntro, Section } from "@/components/layout/PublicShell";
-import { Terminal } from "@/components/ui/Terminal";
+import { Card } from "@/components/ui/Card";
 import { routes } from "@/lib/constants/routes";
 
 export const metadata: Metadata = {
   title: "Providers — Orvix",
   description:
-    "Earn USDC with your idle GPU. Connect a CUDA GPU to the Orvix network and get paid per completed job, settled on-chain in real time.",
+    "Earn USDC with your idle GPU. Provider onboarding is currently early access and manual — apply via GitHub.",
 };
+
+const GITHUB_REPO = "https://github.com/OrvixCompute/orvix";
+const GITHUB_APPLY = "https://github.com/OrvixCompute/orvix/issues/new";
 
 const STEPS = [
   {
-    title: "Install the node client",
-    body: "One command pulls the client and registers your machine with the orchestrator.",
+    title: "Apply",
+    body: "Open a GitHub issue with your GPU model, VRAM, location, and connection. We review and reach out.",
   },
   {
-    title: "Connect your GPU",
-    body: "The client benchmarks your hardware, assigns a tier, and starts advertising capacity to the network.",
+    title: "Get onboarded",
+    body: "We coordinate setup directly with you while the self-serve node client is in development.",
   },
   {
-    title: "Receive jobs",
-    body: "The orchestrator routes inference requests to you based on tier, load, and locality.",
+    title: "Run your node",
+    body: "Your machine registers with the orchestrator and starts receiving inference jobs.",
   },
   {
     title: "Get paid in USDC",
-    body: "You earn a share of every completed request, settled on-chain in real time — no platform middleman.",
+    body: "You earn a share of every completed request, settled on-chain — no platform middleman.",
   },
 ];
 
@@ -34,7 +37,7 @@ const REQUIREMENTS = [
   "NVIDIA GPU with CUDA support (RTX 3090 / 4000-series or better recommended)",
   "Linux host with a stable connection and a public-reachable endpoint",
   "A Solana wallet to receive USDC payouts",
-  "Docker, or the standalone node binary",
+  "Comfort running a long-lived service (Docker or systemd)",
 ];
 
 export default function ProvidersPage() {
@@ -43,22 +46,32 @@ export default function ProvidersPage() {
       <PageIntro
         eyebrow="providers"
         title="Earn USDC with your idle GPU"
-        lead="Orvix turns spare GPU capacity into income. Connect a machine, serve inference for the network, and get paid in USDC for every completed job — settled on-chain, with no intermediary taking a cut."
+        lead="Orvix turns spare GPU capacity into income — connect a machine, serve inference, and get paid in USDC for every completed job. Provider onboarding is early access and handled manually for now."
       />
 
       <section className="pb-8">
-        <Terminal
-          title="get started"
-          command="curl -fsSL https://get.orvix.xyz/node | sh"
-          lines={[
-            "✓ downloading orvix-node",
-            "✓ detected GPU: NVIDIA RTX 4090 (24 GB)",
-            "✓ benchmark complete — tier=gold",
-            "✓ registered node 1c101f60 with orchestrator",
-            "→ awaiting jobs…",
-          ]}
-          cursor
-        />
+        <Card className="space-y-4">
+          <div>
+            <h2 className="text-sm font-medium text-text-primary">Early access</h2>
+            <p className="mt-1 max-w-2xl text-sm text-text-secondary">
+              There is no public node installer yet. We&apos;re onboarding providers manually while
+              the self-serve client is built. To join, open a GitHub issue with your hardware
+              details and we&apos;ll follow up.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <a href={GITHUB_APPLY} target="_blank" rel="noreferrer">
+              <span className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover">
+                <Github size={14} /> Apply on GitHub
+              </span>
+            </a>
+            <a href={GITHUB_REPO} target="_blank" rel="noreferrer">
+              <span className="inline-flex items-center gap-2 rounded-md border border-border-strong px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-bg-secondary">
+                View the project <ExternalLink size={14} />
+              </span>
+            </a>
+          </div>
+        </Card>
       </section>
 
       <Section title="How it works">
@@ -78,9 +91,9 @@ export default function ProvidersPage() {
       <Section title="Economics">
         <p>
           Providers earn <span className="text-text-primary">70% of revenue</span> on every request
-          they serve. Payouts are in USDC and settle on-chain in real time — you can verify each
-          payment on Solana. Staking ORVX raises your tier, which improves routing priority and your
-          effective rate.
+          they serve. Payouts are in USDC and settle on-chain — you can verify each payment on
+          Solana. Staking ORVX raises your tier, which improves routing priority and your effective
+          rate.
         </p>
       </Section>
 
@@ -94,12 +107,14 @@ export default function ProvidersPage() {
           ))}
         </ul>
         <div className="flex flex-wrap gap-x-6 gap-y-2 pt-3 text-sm">
-          <Link
-            href={routes.docs}
+          <a
+            href={GITHUB_APPLY}
+            target="_blank"
+            rel="noreferrer"
             className="inline-flex items-center gap-1.5 text-text-primary transition-colors hover:text-accent-hover"
           >
-            Read the provider docs <ArrowRight size={14} />
-          </Link>
+            Apply to run a node <ArrowRight size={14} />
+          </a>
           <Link
             href={routes.staking}
             className="text-text-secondary transition-colors hover:text-text-primary"
