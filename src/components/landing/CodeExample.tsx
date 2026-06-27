@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { CodeBlock } from "@/components/ui/CodeBlock";
+import { config } from "@/lib/constants/config";
 import { cn } from "@/lib/utils/cn";
+
+// Base URL is sourced from NEXT_PUBLIC_API_URL (config.apiUrl) so swapping the
+// endpoint — e.g. to a branded api.orvix.xyz domain later — is one config change.
+const base = `${config.apiUrl}/v1`;
 
 const SNIPPETS = {
   python: {
@@ -10,7 +15,7 @@ const SNIPPETS = {
     code: `from openai import OpenAI
 
 client = OpenAI(
-    base_url="https://api.orvix.xyz/v1",
+    base_url="${base}",
     api_key="orvx_sk_..."
 )
 
@@ -24,7 +29,7 @@ response = client.chat.completions.create(
     code: `import OpenAI from 'openai';
 
 const client = new OpenAI({
-  baseURL: 'https://api.orvix.xyz/v1',
+  baseURL: '${base}',
   apiKey: 'orvx_sk_...'
 });
 
@@ -35,7 +40,7 @@ const response = await client.chat.completions.create({
   },
   curl: {
     language: "bash",
-    code: `curl https://api.orvix.xyz/v1/chat/completions \\
+    code: `curl ${base}/chat/completions \\
   -H "Authorization: Bearer orvx_sk_..." \\
   -H "Content-Type: application/json" \\
   -d '{
