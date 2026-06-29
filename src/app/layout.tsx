@@ -1,7 +1,28 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { Albert_Sans, Plus_Jakarta_Sans, DM_Mono } from "next/font/google";
 import "@/styles/globals.css";
+
+// Asentum-style landing fonts. Exposed as CSS variables and applied only on the
+// landing page via the `.asentum-page` wrapper (utility classes in globals.css),
+// so the global body font (Geist) — and the dashboard — stay unchanged.
+const albertSans = Albert_Sans({
+  subsets: ["latin"],
+  variable: "--font-albert",
+  display: "swap",
+});
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-plus",
+  display: "swap",
+});
+const dmMono = DM_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-dm-mono",
+  display: "swap",
+});
 import { ReduxProvider } from "@/components/providers/ReduxProvider";
 import { WalletProvider } from "@/components/wallet/WalletProvider";
 import { config } from "@/lib/constants/config";
@@ -33,7 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${GeistSans.variable} ${GeistMono.variable} dark`}
+      className={`${GeistSans.variable} ${GeistMono.variable} ${albertSans.variable} ${plusJakarta.variable} ${dmMono.variable} dark`}
       data-theme="dark"
     >
       <body className="bg-bg-primary font-sans text-text-primary antialiased">
