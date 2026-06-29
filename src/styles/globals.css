@@ -24,6 +24,97 @@ body {
   color: #fafafa;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Asentum-style landing design system.                                        */
+/* Scoped to the landing page via `.asentum-page` so the dashboard and other   */
+/* routes keep the existing Geist/dark dev-tool look. Extracted from the live  */
+/* Asentum CSS (see reference/asentum-to-orvix-prompt.md in the asentum repo). */
+/* -------------------------------------------------------------------------- */
+
+/* Fonts + dashed dividers registered as Tailwind utilities so responsive/
+   state variants (md:, etc.) generate correctly. */
+@layer utilities {
+  .font-albert {
+    font-family: var(--font-albert), sans-serif;
+  }
+  .font-plus {
+    font-family: var(--font-plus), sans-serif;
+  }
+  .font-dm-mono {
+    font-family: var(--font-dm-mono), monospace;
+  }
+
+  /* Dashed horizontal dividers (16px dash / 12px gap, #363636). */
+  .dash-border-t {
+    background-image: repeating-linear-gradient(90deg, #363636 0 16px, #0000 16px 28px);
+    background-repeat: no-repeat;
+    background-size: 100% 1px;
+    background-position: top;
+    border-top: none !important;
+  }
+  .dash-border-b {
+    background-image: repeating-linear-gradient(90deg, #363636 0 16px, #0000 16px 28px);
+    background-repeat: no-repeat;
+    background-size: 100% 1px;
+    background-position: bottom;
+    border-bottom: none !important;
+  }
+
+  /* Dashed vertical separators. */
+  .dash-vertical {
+    background-image: repeating-linear-gradient(#363636 0 16px, #0000 16px 28px);
+    background-repeat: no-repeat;
+    background-size: 1px 100%;
+  }
+  .dash-sep-r-desktop {
+    background-image: repeating-linear-gradient(#363636 0 16px, #0000 16px 28px);
+    background-repeat: no-repeat;
+    background-size: 1px 100%;
+    background-position: 100%;
+  }
+}
+
+/* Albert Sans as the base font for everything inside the landing page. */
+.asentum-page {
+  font-family: var(--font-albert), sans-serif;
+}
+
+/* Corner-pop buttons: four absolutely-positioned corner marks that pop on hover. */
+@keyframes corner-pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.6);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.corner-pop-hover:hover .corner-mark {
+  animation: corner-pop 0.3s ease-out;
+}
+
+/* Left/right dashed page guides at 4% — scoped to the landing page (Asentum
+   puts these on body::before/::after; we scope them so other routes are clean). */
+.asentum-page::before,
+.asentum-page::after {
+  content: "";
+  z-index: 30;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(#363636 0 16px, #0000 16px 28px);
+  width: 1px;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+}
+.asentum-page::before {
+  left: 4%;
+}
+.asentum-page::after {
+  right: 4%;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
