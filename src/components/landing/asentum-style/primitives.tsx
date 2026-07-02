@@ -39,16 +39,20 @@ export function ImagePlaceholder({ className = "" }: { className?: string }) {
   );
 }
 
-// Framed brand artwork for image slots. Fills its sized parent with object-cover
-// and adds a subtle hairline border to match the dark Asentum aesthetic.
+// Framed brand artwork for image slots. Fills its sized parent and adds a subtle
+// hairline border to match the dark Asentum aesthetic. `fit` controls how the
+// image sits in the frame: "cover" crops to fill, "contain" preserves the whole
+// composition (safest when an asset's aspect ratio differs from the slot).
 export function AssetImage({
   src,
   alt,
   className = "",
+  fit = "cover",
 }: {
   src: string;
   alt: string;
   className?: string;
+  fit?: "cover" | "contain";
 }) {
   return (
     <div
@@ -59,7 +63,7 @@ export function AssetImage({
         alt={alt}
         fill
         sizes="(max-width: 768px) 100vw, 50vw"
-        className="object-cover"
+        className={fit === "contain" ? "object-contain" : "object-cover"}
       />
     </div>
   );
