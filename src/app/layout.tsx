@@ -24,7 +24,7 @@ const dmMono = DM_Mono({
   display: "swap",
 });
 import { ReduxProvider } from "@/components/providers/ReduxProvider";
-import { WalletProvider } from "@/components/wallet/WalletProvider";
+import { WalletProviderClient } from "@/components/wallet/WalletProviderClient";
 import { config } from "@/lib/constants/config";
 
 export const metadata: Metadata = {
@@ -59,7 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="bg-bg-primary font-sans text-text-primary antialiased">
         <ReduxProvider>
-          <WalletProvider>{children}</WalletProvider>
+          <WalletProviderClient>{children}</WalletProviderClient>
         </ReduxProvider>
       </body>
     </html>
