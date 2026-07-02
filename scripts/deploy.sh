@@ -47,11 +47,13 @@ echo "==> Installing production dependencies and (re)starting pm2"
 ssh "${DEPLOY_HOST}" bash -s <<REMOTE
   set -euo pipefail
   cd "${DEPLOY_PATH}"
-  # Use `npm install` (not `npm ci`) for the production deps: the server's npm
+  # Use "npm install" (not "npm ci") for the production deps: the server's npm
   # can be a different major than the one that generated package-lock.json, and
   # npm ci's strict lockfile-sync check rejects lockfiles missing optional
   # platform binaries recorded differently across npm versions. install is
   # lenient and reconciles the lockfile in place.
+  # NOTE: this heredoc is unquoted (<<REMOTE) for ${VAR} expansion, so never use
+  # backticks here -- they trigger local command substitution and corrupt it.
   npm install --omit=dev --no-audit --no-fund
   export PORT="${PORT}"
   if pm2 describe "${APP_NAME}" > /dev/null 2>&1; then
