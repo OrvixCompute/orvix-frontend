@@ -8,7 +8,13 @@ import { Textarea } from "@/components/ui/Textarea";
 import { SettingsPanel, type PlaygroundSettings } from "@/components/dashboard/playground/SettingsPanel";
 import { CodeViewDialog } from "@/components/dashboard/playground/CodeViewDialog";
 import { useAppSelector } from "@/lib/store/hooks";
-import { runChatCompletion, type ChatUsage } from "@/lib/inference/chat";
+import { useCreateKeyMutation } from "@/lib/store/api/apiKeysApi";
+import { runChatCompletion, ChatError, type ChatUsage } from "@/lib/inference/chat";
+import {
+  loadPlaygroundKey,
+  savePlaygroundKey,
+  clearPlaygroundKey,
+} from "@/lib/inference/playgroundKey";
 import { DEFAULT_MODEL, GENERATION_LIMITS } from "@/lib/constants/models";
 import type { ChatMessage } from "@/lib/types/orvix";
 
@@ -36,6 +42,8 @@ function MessageRow({
  *  Send button is disabled with a prompt to connect a wallet. */
 export function Playground({ subtitle }: { subtitle?: string }) {
   const token = useAppSelector((s) => s.auth.token);
+  const wallet = useAppSelector((s) => s.auth.user?.wallet ?? null);
+  const [createKey] = useCreateKeyMutation();
 
   const [system, setSystem] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -62,6 +70,20 @@ export function Playground({ subtitle }: { subtitle?: string }) {
   const patchSettings = (patch: Partial<PlaygroundSettings>) =>
     setSettings((s) => ({ ...s, ...patch }));
 
+  // Inference authenticates with an Orvix API key, not the wallet JWT. Create a
+  // dedicated "Playground" key for the connected wallet on first use and cache
+  // it locally; `forceNew` mints a fresh one (used after a key is rejected).
+  const ensureApiKey = async (forceNew = false): Promise<string> => {
+    if (!wallet) throw new Error("Connect your wallet to run inference.");
+    if (!forceNew) {
+      const cached = loadPlaygroundKey(wallet);
+      if (cached) return cached;
+    }
+    const created = await createKey({ name: "Playground" }).unwrap();
+    savePlaygroundKey(wallet, created.key);
+    return created.key;
+  };
+
   const send = async () => {
     const text = input.trim();
     if (!text || streaming) return;
@@ -83,8 +105,8 @@ export function Playground({ subtitle }: { subtitle?: string }) {
     ];
 
     let acc = "";
-    try {
-      const result = await runChatCompletion(
+    const runWith = (apiKey: string) =>
+      runChatCompletion(
         {
           model: settings.model,
           messages: payload,
@@ -93,7 +115,7 @@ export function Playground({ subtitle }: { subtitle?: string }) {
           stream: settings.stream,
         },
         {
-          token,
+          apiKey,
           signal: controller.signal,
           onDelta: (chunk) => {
             acc += chunk;
@@ -101,6 +123,24 @@ export function Playground({ subtitle }: { subtitle?: string }) {
           },
         },
       );
+
+    try {
+      let result;
+      try {
+        result = await runWith(await ensureApiKey());
+      } catch (e) {
+        // A rejected key (401) usually means the cached key was revoked/rotated
+        // elsewhere. Mint a fresh one and retry once. A 401 fails before any
+        // tokens stream, so there's no partial output to discard.
+        if (e instanceof ChatError && e.status === 401 && wallet) {
+          clearPlaygroundKey(wallet);
+          acc = "";
+          setStreamText("");
+          result = await runWith(await ensureApiKey(true));
+        } else {
+          throw e;
+        }
+      }
       setMessages((m) => [...m, { role: "assistant", content: result.content }]);
       if (result.usage) setUsage(result.usage);
     } catch (e) {

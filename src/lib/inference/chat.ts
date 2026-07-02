@@ -29,32 +29,44 @@ async function readError(res: Response): Promise<string> {
   } catch {
     /* non-JSON body — fall through */
   }
-  if (res.status === 401) return "Your session expired. Please reconnect your wallet.";
+  if (res.status === 401) return "Inference key was rejected. Reconnect your wallet and try again.";
   if (res.status === 402) return "Insufficient USDC balance. Top up to run inference.";
   return `Request failed (${res.status})`;
 }
 
+/** Error thrown by runChatCompletion, carrying the HTTP status for callers that
+ *  need to react to specific failures (e.g. rotate the API key on 401). */
+export class ChatError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ChatError";
+    this.status = status;
+  }
+}
+
 /**
  * Run an OpenAI-compatible chat completion against POST /v1/chat/completions.
+ * Authenticates with an Orvix API key (orvx_sk_…), not the wallet JWT.
  * When `params.stream` is true, `onDelta` receives content as it arrives and the
- * resolved promise holds the full text. Throws on HTTP errors; AbortError
- * propagates so callers can distinguish a user-initiated stop.
+ * resolved promise holds the full text. Throws ChatError on HTTP errors;
+ * AbortError propagates so callers can distinguish a user-initiated stop.
  */
 export async function runChatCompletion(
   params: ChatParams,
-  opts: { token: string | null; signal?: AbortSignal; onDelta?: (chunk: string) => void },
+  opts: { apiKey: string | null; signal?: AbortSignal; onDelta?: (chunk: string) => void },
 ): Promise<ChatResult> {
   const res = await fetch(`${config.apiUrl}/v1/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(opts.token ? { Authorization: `Bearer ${opts.token}` } : {}),
+      ...(opts.apiKey ? { Authorization: `Bearer ${opts.apiKey}` } : {}),
     },
     body: JSON.stringify(params),
     signal: opts.signal,
   });
 
-  if (!res.ok) throw new Error(await readError(res));
+  if (!res.ok) throw new ChatError(await readError(res), res.status);
 
   if (!params.stream || !res.body) {
     const data = await res.json();
