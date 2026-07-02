@@ -47,10 +47,6 @@ export default function LandingPage() {
           badge="Verifiable Inference"
           title="Inference you can trust without trusting the provider."
           body="Hashed model outputs. Stake-slashable providers. Every response is verifiable, so you don't have to take a node's word for it."
-          image={{
-            src: "/orvix-5.png",
-            alt: "Orvix compute core with AI models, agents, enterprise, security, and global network capabilities",
-          }}
         />
         <AltSection
           tone="green"
