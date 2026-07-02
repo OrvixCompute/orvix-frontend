@@ -19,7 +19,9 @@ set -euo pipefail
 DEPLOY_HOST="${DEPLOY_HOST:-}"
 DEPLOY_PATH="${DEPLOY_PATH:-/opt/orvix-frontend}"
 APP_NAME="${APP_NAME:-orvix-frontend}"
-PORT="${PORT:-3000}"
+# Default 3003: the target VPS already runs other apps on 3000/3001/3002, so the
+# Orvix frontend uses 3003. nginx (orvix.network vhost) proxies to this port.
+PORT="${PORT:-3003}"
 
 if [[ -z "${DEPLOY_HOST}" ]]; then
   echo "error: DEPLOY_HOST is not set (e.g. root@187.127.118.174)" >&2
@@ -45,7 +47,12 @@ echo "==> Installing production dependencies and (re)starting pm2"
 ssh "${DEPLOY_HOST}" bash -s <<REMOTE
   set -euo pipefail
   cd "${DEPLOY_PATH}"
-  npm ci --omit=dev
+  # Use `npm install` (not `npm ci`) for the production deps: the server's npm
+  # can be a different major than the one that generated package-lock.json, and
+  # npm ci's strict lockfile-sync check rejects lockfiles missing optional
+  # platform binaries recorded differently across npm versions. install is
+  # lenient and reconciles the lockfile in place.
+  npm install --omit=dev --no-audit --no-fund
   export PORT="${PORT}"
   if pm2 describe "${APP_NAME}" > /dev/null 2>&1; then
     pm2 restart "${APP_NAME}" --update-env
