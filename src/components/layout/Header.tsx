@@ -6,7 +6,8 @@ import Image from "next/image";
 import { Menu, X, Github, Twitter } from "lucide-react";
 import { InlineNav } from "@/components/ui/InlineNav";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
-import { primaryNav, routes } from "@/lib/constants/routes";
+import { useAppSelector } from "@/lib/store/hooks";
+import { primaryNav, routes, dashboardRoutes } from "@/lib/constants/routes";
 
 const SOCIALS = [
   { label: "Twitter", href: "https://twitter.com/orvix", Icon: Twitter },
@@ -50,6 +51,14 @@ function Logo() {
 export function Header() {
   const [open, setOpen] = useState(false);
 
+  // Show a "dashboard" link once signed in. Auth is hydrated from localStorage
+  // after mount, so the link appears client-side without an SSR mismatch.
+  const { token, expiresAt } = useAppSelector((s) => s.auth);
+  const isAuthed = Boolean(token) && (expiresAt == null || expiresAt > Date.now());
+  const navItems = isAuthed
+    ? [...primaryNav, { label: "dashboard", href: dashboardRoutes.overview }]
+    : primaryNav;
+
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-bg-primary">
       <div className="mx-auto flex max-w-page items-center justify-between px-6 py-4">
@@ -57,7 +66,7 @@ export function Header() {
 
         {/* Desktop nav */}
         <div className="hidden items-center gap-5 md:flex">
-          <InlineNav items={primaryNav} />
+          <InlineNav items={navItems} />
           <Socials className="flex items-center gap-3 border-l border-border pl-5" />
           <ConnectButton />
         </div>
@@ -76,7 +85,7 @@ export function Header() {
       {open && (
         <div className="border-t border-border md:hidden">
           <div className="mx-auto flex max-w-page flex-col gap-4 px-6 py-6">
-            {primaryNav.map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
