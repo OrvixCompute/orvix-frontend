@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, ArrowRight } from "lucide-react";
+import { Activity, ArrowRight, ImageIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useGetBalanceQuery, useGetTransactionsQuery } from "@/lib/store/api/billingApi";
-import { useGetTierQuery } from "@/lib/store/api/accountApi";
+import { useGetTierQuery, useGetQuotaQuery } from "@/lib/store/api/accountApi";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { GetStarted } from "@/components/dashboard/GetStarted";
@@ -34,6 +34,8 @@ export default function DashboardOverview() {
   const { data: balance, isLoading: balanceLoading } = useGetBalanceQuery();
   const { data: tier, isLoading: tierLoading } = useGetTierQuery();
   const { data: txns, isLoading: txnsLoading } = useGetTransactionsQuery({ limit: 10 });
+  const { data: quota } = useGetQuotaQuery(undefined, { skip: !user });
+  const imagesToday = quota?.image.used_today ?? 0;
 
   return (
     <div className="space-y-8">
@@ -82,6 +84,20 @@ export default function DashboardOverview() {
       {/* Recent activity */}
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-text-secondary">Recent activity</h2>
+        {imagesToday > 0 && (
+          <Link
+            href={`${dashboardRoutes.playground}?mode=image`}
+            className="flex items-center justify-between gap-4 rounded-lg border border-border bg-bg-secondary px-4 py-3 text-sm transition-colors hover:border-border-strong"
+          >
+            <span className="flex items-center gap-2 text-text-primary">
+              <ImageIcon size={14} className="text-text-muted" />
+              {imagesToday} image{imagesToday === 1 ? "" : "s"} generated today
+            </span>
+            <span className="flex items-center gap-1 text-xs text-text-secondary">
+              View <ArrowRight size={13} />
+            </span>
+          </Link>
+        )}
         {txnsLoading ? (
           <Card className="h-40 animate-pulse" />
         ) : !txns || txns.length === 0 ? (

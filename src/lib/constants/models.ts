@@ -20,3 +20,30 @@ export const GENERATION_LIMITS = {
   temperature: { min: 0, max: 2, step: 0.1, default: 0.7 },
   maxTokens: { min: 1, max: 4096, step: 1, default: 512 },
 } as const;
+
+/** Image models offered by the network (POST /v1/images/generations). */
+export const IMAGE_MODELS: ModelOption[] = [
+  { id: "flux-schnell", label: "FLUX.1 Schnell", available: true, context: "1024px" },
+];
+
+export const DEFAULT_IMAGE_MODEL = "flux-schnell";
+
+/** Supported output sizes, `WIDTHxHEIGHT`. Display with × via {@link formatImageSize}. */
+export const IMAGE_SIZES = [
+  "1024x1024",
+  "1024x1792",
+  "1792x1024",
+  "512x512",
+  "1536x1536",
+] as const;
+
+export const DEFAULT_IMAGE_SIZE = "1024x1024";
+
+/** Prompt length bounds and image-count bounds for the image playground. */
+export const IMAGE_PROMPT_LIMITS = { min: 3, max: 1000 } as const;
+export const IMAGE_COUNT = { min: 1, max: 4, default: 1 } as const;
+
+/** "1024x1024" → "1024 × 1024" for display. */
+export function formatImageSize(size: string): string {
+  return size.replace("x", " × ");
+}

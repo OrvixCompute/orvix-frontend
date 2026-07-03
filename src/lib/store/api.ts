@@ -27,6 +27,7 @@ export const api = createApi({
     "Nodes",
     "Staking",
     "Governance",
+    "Quota",
   ],
   endpoints: () => ({}),
 });

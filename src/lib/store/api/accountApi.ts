@@ -1,5 +1,5 @@
 import { api } from "../api";
-import type { TierResponse } from "@/lib/types/orvix";
+import type { TierResponse, QuotaResponse } from "@/lib/types/orvix";
 
 export const accountApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -7,8 +7,12 @@ export const accountApi = api.injectEndpoints({
       query: () => "/account/tier",
       providesTags: ["User"],
     }),
+    getQuota: builder.query<QuotaResponse, void>({
+      query: () => "/account/quota",
+      providesTags: ["Quota"],
+    }),
   }),
   overrideExisting: false,
 });
 
-export const { useGetTierQuery } = accountApi;
+export const { useGetTierQuery, useGetQuotaQuery } = accountApi;

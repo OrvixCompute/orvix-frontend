@@ -8,6 +8,14 @@ export const metadata: Metadata = {
 
 const ENTRIES = [
   {
+    version: "image generation",
+    date: "2026",
+    items: [
+      "Playground: new Image tab — generate images with FLUX.1 Schnell, pick size and count, and download results.",
+      "Per-account image quota display, holder-aware error handling, and session prompt history.",
+    ],
+  },
+  {
     version: "v0.2.0",
     date: "2026",
     items: [

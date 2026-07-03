@@ -182,6 +182,35 @@ export interface BurnEventInfo {
   created_at: string;
 }
 
+/**
+ * Image generation quota for the current account (part of GET /v1/account/quota).
+ * `type` is "grace" during the grace period (everyone gets a small daily
+ * allowance) or "holder_daily" once holder-gating is active (≥10k ORVX).
+ */
+export interface ImageQuota {
+  type: string;
+  daily_limit: number;
+  used_today: number;
+  /** ISO timestamp when the daily counter resets, when the backend provides it. */
+  reset_at?: string | null;
+}
+
+/** Free chat allowance for non-holders (part of GET /v1/account/quota). */
+export interface ChatQuota {
+  type?: string;
+  limit?: number;
+  used?: number;
+  remaining?: number;
+}
+
+/** GET /v1/account/quota — image (and chat) usage for the current account. */
+export interface QuotaResponse {
+  is_holder: boolean;
+  orvx_balance?: string | number;
+  image: ImageQuota;
+  chat?: ChatQuota;
+}
+
 /** GET /v1/governance/snapshot-url — off-chain governance lives on Snapshot. */
 export interface GovernanceSnapshot {
   space: string;
