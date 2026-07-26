@@ -39,12 +39,14 @@ export default function PrivacyPage() {
 
       <Section title="Contact">
         <p>
-          Questions about privacy? Reach us at{" "}
+          Questions about privacy? Reach us on{" "}
           <a
-            href="mailto:hello@orvix.xyz"
+            href="https://t.me/Orvix_hq"
+            target="_blank"
+            rel="noreferrer"
             className="text-text-primary underline underline-offset-4 hover:text-accent-hover"
           >
-            hello@orvix.xyz
+            Telegram
           </a>
           .
         </p>
