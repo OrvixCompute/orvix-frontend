@@ -3,15 +3,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, Github, Twitter } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { XLogo, TelegramLogo, GitHubLogo } from "@/components/ui/BrandIcons";
 import { InlineNav } from "@/components/ui/InlineNav";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { useAppSelector } from "@/lib/store/hooks";
 import { primaryNav, routes, dashboardRoutes } from "@/lib/constants/routes";
 
 const SOCIALS = [
-  { label: "X", href: "https://x.com/Orvixhq", Icon: Twitter },
-  { label: "GitHub", href: "https://github.com/OrvixCompute/orvix", Icon: Github },
+  { label: "X", href: "https://x.com/Orvixhq", Icon: XLogo },
+  { label: "Telegram", href: "https://t.me/Orvix_hq", Icon: TelegramLogo },
+  { label: "GitHub", href: "https://github.com/OrvixCompute/orvix", Icon: GitHubLogo },
 ];
 
 function Socials({ className }: { className?: string }) {
