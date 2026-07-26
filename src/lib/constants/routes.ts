@@ -2,6 +2,7 @@
 export const routes = {
   home: "/",
   // Public, browser-based playground; signing in (header) enables Send.
+  stats: "/stats",
   playground: "/playground",
   docs: "/docs",
   providers: "/providers",
@@ -25,6 +26,7 @@ export const dashboardRoutes = {
 
 /** Primary inline nav shown in the header. */
 export const primaryNav = [
+  { label: "stats", href: routes.stats },
   { label: "playground", href: routes.playground },
   { label: "docs", href: routes.docs },
   { label: "providers", href: routes.providers },
