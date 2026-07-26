@@ -33,7 +33,21 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
 echo "==> Building production bundle"
-npm ci
+# npm ci always wipes node_modules and reinstalls from scratch (~950 MB here),
+# which costs ~11 minutes even when no dependency changed. Skip it when
+# package-lock.json is byte-identical to the one used for the last install.
+# The stamp lives inside node_modules so deleting that directory also discards
+# the stamp, and the next deploy reinstalls. Set FORCE_INSTALL=1 to reinstall
+# regardless (e.g. if node_modules is suspected corrupt).
+LOCK_STAMP="node_modules/.deploy-lock-hash"
+LOCK_HASH="$(sha256sum package-lock.json | cut -d' ' -f1)"
+if [[ "${FORCE_INSTALL:-0}" != "1" && -f "${LOCK_STAMP}" && "$(cat "${LOCK_STAMP}")" == "${LOCK_HASH}" ]]; then
+  echo "    dependencies unchanged since last install -- skipping npm ci"
+  echo "    (run with FORCE_INSTALL=1 to reinstall anyway)"
+else
+  npm ci
+  echo "${LOCK_HASH}" > "${LOCK_STAMP}"
+fi
 npm run build
 
 echo "==> Syncing build output to ${DEPLOY_HOST}:${DEPLOY_PATH}"
