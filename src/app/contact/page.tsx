@@ -9,7 +9,8 @@ export const metadata: Metadata = {
 const CHANNELS = [
   { label: "Email", value: "hello@orvix.xyz", href: "mailto:hello@orvix.xyz" },
   { label: "GitHub", value: "OrvixCompute/orvix", href: "https://github.com/OrvixCompute/orvix" },
-  { label: "Twitter", value: "@orvix", href: "https://twitter.com/orvix" },
+  { label: "X", value: "@Orvixhq", href: "https://x.com/Orvixhq" },
+  { label: "Telegram", value: "@Orvix_hq", href: "https://t.me/Orvix_hq" },
   { label: "Discord", value: "discord.gg/orvix", href: "https://discord.gg/orvix" },
 ];
 

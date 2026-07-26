@@ -34,9 +34,8 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
   {
     title: "Connect.",
     links: [
-      { label: "Twitter (X)", href: "https://twitter.com/orvix", external: true },
-      // TODO(orvix): confirm real Telegram handle
-      { label: "Telegram", href: "https://t.me/orvix", external: true },
+      { label: "X", href: "https://x.com/Orvixhq", external: true },
+      { label: "Telegram", href: "https://t.me/Orvix_hq", external: true },
       {
         label: "GitHub",
         href: "https://github.com/OrvixCompute/orvix",

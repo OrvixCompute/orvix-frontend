@@ -10,7 +10,7 @@ import { useAppSelector } from "@/lib/store/hooks";
 import { primaryNav, routes, dashboardRoutes } from "@/lib/constants/routes";
 
 const SOCIALS = [
-  { label: "Twitter", href: "https://twitter.com/orvix", Icon: Twitter },
+  { label: "X", href: "https://x.com/Orvixhq", Icon: Twitter },
   { label: "GitHub", href: "https://github.com/OrvixCompute/orvix", Icon: Github },
 ];
 

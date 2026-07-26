@@ -14,7 +14,8 @@ const mainLinks = [
 
 const externalLinks = [
   { label: "GitHub", href: "https://github.com/OrvixCompute/orvix" },
-  { label: "Twitter", href: "https://twitter.com/orvix" },
+  { label: "X", href: "https://x.com/Orvixhq" },
+  { label: "Telegram", href: "https://t.me/Orvix_hq" },
   { label: "Discord", href: "https://discord.gg/orvix" },
 ];
 
