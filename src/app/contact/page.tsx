@@ -11,7 +11,6 @@ const CHANNELS = [
   { label: "GitHub", value: "OrvixCompute/orvix", href: "https://github.com/OrvixCompute/orvix" },
   { label: "X", value: "@Orvixhq", href: "https://x.com/Orvixhq" },
   { label: "Telegram", value: "@Orvix_hq", href: "https://t.me/Orvix_hq" },
-  { label: "Discord", value: "discord.gg/orvix", href: "https://discord.gg/orvix" },
 ];
 
 export default function ContactPage() {

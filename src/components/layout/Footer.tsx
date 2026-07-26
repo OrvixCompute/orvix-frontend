@@ -16,7 +16,6 @@ const externalLinks = [
   { label: "GitHub", href: "https://github.com/OrvixCompute/orvix" },
   { label: "X", href: "https://x.com/Orvixhq" },
   { label: "Telegram", href: "https://t.me/Orvix_hq" },
-  { label: "Discord", href: "https://discord.gg/orvix" },
 ];
 
 export function Footer() {
