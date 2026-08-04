@@ -59,5 +59,31 @@ See `.env.local.example`. The backend orchestrator API base is
 
 ## Deploy
 
-Self-hosted on a VPS via pm2 on port 3000 (`http://<ip>:3000`) until a domain is
-attached.
+Self-hosted on a VPS, live at https://orvix.network. `scripts/deploy.sh` builds
+locally, rsyncs the build output, installs production dependencies on the
+server, and (re)starts the app under pm2:
+
+```bash
+DEPLOY_HOST=<ssh-target> ./scripts/deploy.sh
+```
+
+Server layout:
+
+- App directory `/opt/orvix/frontend`, pm2 process `orvix-frontend` on port
+  3003 (`pm2 save` + `pm2-<user>.service` keep it alive across reboots).
+- nginx terminates TLS (certbot) and proxies `/` to `127.0.0.1:3003`, `/v1/` to
+  the orchestrator on `127.0.0.1:8000`, and `/images/` to `/var/orvix`.
+- `NEXT_PUBLIC_*` values are baked in at build time from `.env.production`, so
+  the API must be same-origin HTTPS — see that file for why.
+
+Notes:
+
+- The server runs `npm install --omit=dev`, not `npm ci`: its npm major can
+  differ from the one that generated `package-lock.json`, and `npm ci`'s strict
+  lockfile check rejects that.
+- Locally the build skips `npm ci` when `package-lock.json` is unchanged since
+  the last install. Pass `FORCE_INSTALL=1` to reinstall anyway.
+- If the remote install fails with `451 Unavailable For Legal Reasons`, the
+  server is using a cloud-provider npm mirror that blocks some tarballs. Point
+  it back at the official registry:
+  `npm config set registry https://registry.npmjs.org/`.

@@ -6,25 +6,26 @@
 # the server, and (re)starts the app under pm2 on port 3000.
 #
 # Configure via environment variables (or a local .env.deploy that you source):
-#   DEPLOY_HOST   SSH target, e.g. root@YOUR_VPS   (required)
-#   DEPLOY_PATH   remote app directory (default: /opt/orvix-frontend)
+#   DEPLOY_HOST   SSH target or ssh_config alias   (required)
+#   DEPLOY_PATH   remote app directory (default: /opt/orvix/frontend)
 #   APP_NAME      pm2 process name     (default: orvix-frontend)
-#   PORT          listen port          (default: 3000)
+#   PORT          listen port          (default: 3003)
 #
 # Usage:
-#   DEPLOY_HOST=root@YOUR_VPS ./scripts/deploy.sh
+#   DEPLOY_HOST=projecteon ./scripts/deploy.sh
 
 set -euo pipefail
 
 DEPLOY_HOST="${DEPLOY_HOST:-}"
-DEPLOY_PATH="${DEPLOY_PATH:-/opt/orvix-frontend}"
+# /opt itself is root-owned on the VPS, but /opt/orvix belongs to the deploy
+# user and holds both services (frontend/ and orchestrator/).
+DEPLOY_PATH="${DEPLOY_PATH:-/opt/orvix/frontend}"
 APP_NAME="${APP_NAME:-orvix-frontend}"
-# Default 3003: the target VPS already runs other apps on 3000/3001/3002, so the
-# Orvix frontend uses 3003. nginx (orvix.network vhost) proxies to this port.
+# 3003 is what the nginx orvix.network vhost proxies "/" to; keep them in sync.
 PORT="${PORT:-3003}"
 
 if [[ -z "${DEPLOY_HOST}" ]]; then
-  echo "error: DEPLOY_HOST is not set (e.g. root@YOUR_VPS)" >&2
+  echo "error: DEPLOY_HOST is not set (e.g. projecteon)" >&2
   exit 1
 fi
 
