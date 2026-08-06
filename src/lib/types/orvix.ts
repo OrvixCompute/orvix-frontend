@@ -228,3 +228,61 @@ export interface NetworkStats {
   last_buyback_at: string | null;
   last_burn_at: string | null;
 }
+
+/** GET /v1/network/stats — node counts, GPU inventory and inference activity. */
+export interface ComputeNodeStats {
+  registered: number;
+  online: number;
+  ready: number;
+  busy: number;
+  draining: number;
+  offline: number;
+  chat_capable: number;
+  image_capable: number;
+  /** Postgres numeric — arrives as a string, parse before formatting. */
+  total_vram_gb: string;
+}
+
+export interface ComputeGpuStats {
+  gpu_model: string;
+  count: number;
+}
+
+export interface ComputeProviderStats {
+  total: number;
+  staked: number;
+}
+
+export interface ComputeChatStats {
+  requests_total: number;
+  requests_window: number;
+  tokens_total: number;
+  tokens_window: number;
+  /** Null when no chat request landed inside the window. */
+  avg_latency_ms: number | null;
+}
+
+export interface ComputeImageStats {
+  generated_total: number;
+  generated_window: number;
+}
+
+export interface ComputeModelStats {
+  chat: number;
+  image: number;
+}
+
+/**
+ * Compute-side network statistics. `*_window` fields cover the last
+ * `window_hours`; `*_total` fields are all time. Mock jobs are excluded.
+ */
+export interface ComputeStats {
+  window_hours: number;
+  nodes: ComputeNodeStats;
+  gpus: ComputeGpuStats[];
+  providers: ComputeProviderStats;
+  chat: ComputeChatStats;
+  images: ComputeImageStats;
+  models: ComputeModelStats;
+  generated_at: string;
+}

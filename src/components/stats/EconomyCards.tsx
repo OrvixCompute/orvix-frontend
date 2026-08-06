@@ -1,63 +1,78 @@
 "use client";
 
-import { useGetNetworkStatsQuery } from "@/lib/store/api/stakingApi";
-import type { StatCardData } from "@/lib/constants/stats";
-import { StatCard } from "./StatCard";
-import { formatNumber } from "@/lib/utils/format";
+import type { NetworkStats } from "@/lib/types/orvix";
+import type { StatCardData } from "@/lib/types/stats";
+import { StatSection } from "./StatSection";
+import { formatCompact, formatDateTime, formatNumber, parseNumeric } from "@/lib/utils/format";
 
 interface EconomyCardsProps {
-  mockStats: StatCardData[];
+  data?: NetworkStats;
+  loading?: boolean;
 }
 
-function formatUsd(value: number): string {
-  return `$${formatNumber(Math.round(value))}`;
+/** ORVX amounts arrive as numeric strings — parse, then compact. */
+function orvx(value: string | null | undefined): string {
+  return formatCompact(parseNumeric(value));
 }
 
-function formatOrvxCompact(value: string | number): string {
-  const num = typeof value === "string" ? parseFloat(value) : value;
-  if (Number.isNaN(num)) return "—";
-  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
-  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}k`;
-  return formatNumber(num);
+function usd(value: string | null | undefined): string {
+  const num = parseNumeric(value);
+  if (num === null) return "—";
+  if (num > 0 && num < 0.01) return "<$0.01";
+  if (num < 1000) return `$${num.toFixed(2)}`;
+  return `$${formatNumber(Math.round(num))}`;
 }
 
-export function EconomyCards({ mockStats }: EconomyCardsProps) {
-  const { data } = useGetNetworkStatsQuery();
+const PLACEHOLDERS: StatCardData[] = [
+  { label: "ORVX STAKED", value: "—", icon: "Coins" },
+  { label: "ORVX BOUGHT BACK", value: "—", icon: "RefreshCcw" },
+  { label: "ORVX BURNED", value: "—", icon: "Flame" },
+  { label: "BUYBACK BUDGET", value: "—", icon: "Coins" },
+];
 
-  const stats = mockStats.map((stat) => {
-    if (!data) return stat;
+function cards(data: NetworkStats): StatCardData[] {
+  return [
+    {
+      label: "ORVX STAKED",
+      value: orvx(data.total_staked),
+      unit: " ORVX",
+      icon: "Coins",
+      sub: `${formatNumber(data.total_providers)} providers`,
+    },
+    {
+      label: "ORVX BOUGHT BACK",
+      value: orvx(data.total_orvx_bought),
+      unit: " ORVX",
+      icon: "RefreshCcw",
+      sub: data.last_buyback_at
+        ? `Last buyback ${formatDateTime(data.last_buyback_at)}`
+        : "No buybacks yet",
+    },
+    {
+      label: "ORVX BURNED",
+      value: orvx(data.total_orvx_burned),
+      unit: " ORVX",
+      icon: "Flame",
+      sub: data.last_burn_at
+        ? `Last burn ${formatDateTime(data.last_burn_at)}`
+        : "No burns yet",
+    },
+    {
+      label: "BUYBACK BUDGET",
+      value: usd(data.buyback_budget_usdc),
+      icon: "Coins",
+      sub: `${orvx(data.orvx_held_for_burn)} ORVX held for burn`,
+    },
+  ];
+}
 
-    if (stat.label === "ORVX BUYBACKS") {
-      const usdc = parseFloat(data.buyback_budget_usdc);
-      return {
-        ...stat,
-        value: Number.isNaN(usdc) ? stat.value : formatUsd(usdc),
-      };
-    }
-
-    if (stat.label === "ORVX BURNED") {
-      return {
-        ...stat,
-        value: `${formatOrvxCompact(data.total_orvx_burned)}`,
-      };
-    }
-
-    return stat;
-  });
-
+export function EconomyCards({ data, loading = false }: EconomyCardsProps) {
   return (
-    <section className="px-[4%] py-4">
-      <div className="mx-auto max-w-7xl">
-        <h2 className="font-dm-mono text-[13px] font-medium uppercase tracking-[0.15em] text-[#2DAEFF]">
-          ECONOMY
-        </h2>
-
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {stats.map((stat) => (
-            <StatCard key={stat.label} stat={stat} />
-          ))}
-        </div>
-      </div>
-    </section>
+    <StatSection
+      title="ECONOMY"
+      stats={data ? cards(data) : PLACEHOLDERS}
+      columns={4}
+      loading={loading}
+    />
   );
 }
