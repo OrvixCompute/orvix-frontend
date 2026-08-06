@@ -54,11 +54,22 @@ export function ChatPanel() {
   const [codeOpen, setCodeOpen] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  // The transcript follows new tokens only while the user is at the bottom;
+  // scrolling up to re-read earlier messages pins the view where they left it.
+  const followRef = useRef(true);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = scrollRef.current;
+    if (!el || !followRef.current) return;
+    el.scrollTop = el.scrollHeight;
   }, [messages, streamText]);
+
+  const onTranscriptScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    followRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 32;
+  };
 
   const patchSettings = (patch: Partial<PlaygroundSettings>) =>
     setSettings((s) => ({ ...s, ...patch }));
@@ -69,6 +80,7 @@ export function ChatPanel() {
 
     setError(null);
     setUsage(null);
+    followRef.current = true;
     const history = [...messages, { role: "user" as const, content: text }];
     setMessages(history);
     setInput("");
@@ -140,6 +152,7 @@ export function ChatPanel() {
 
   const clear = () => {
     if (streaming) return;
+    followRef.current = true;
     setMessages([]);
     setStreamText("");
     setError(null);
@@ -188,9 +201,15 @@ export function ChatPanel() {
             />
           </div>
 
-          <div className="min-h-[280px] rounded-lg border border-border bg-bg-secondary p-4">
+          {/* Fixed-height transcript: long conversations scroll inside the box
+              instead of pushing the composer off the page. */}
+          <div
+            ref={scrollRef}
+            onScroll={onTranscriptScroll}
+            className="h-[clamp(280px,48vh,560px)] overflow-y-auto overscroll-contain rounded-lg border border-border bg-bg-secondary p-4"
+          >
             {isEmpty ? (
-              <div className="flex h-[248px] flex-col items-center justify-center text-center">
+              <div className="flex h-full flex-col items-center justify-center text-center">
                 <p className="text-sm text-text-tertiary">
                   Send a message to run it through the network.
                 </p>
@@ -201,7 +220,6 @@ export function ChatPanel() {
                   <MessageRow key={i} role={m.role} content={m.content} />
                 ))}
                 {streaming && <MessageRow role="assistant" content={streamText} pending />}
-                <div ref={bottomRef} />
               </div>
             )}
           </div>
