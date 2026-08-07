@@ -32,6 +32,11 @@ const PHASES: Phase[] = [
         status: "SHIPPED",
       },
       {
+        title: "Image generation",
+        note: "FLUX schnell + orvix-image-1 serving jobs.",
+        status: "SHIPPED",
+      },
+      {
         title: "Staking + tier system",
         note: "Bronze / Silver / Gold / Diamond.",
         status: "SHIPPED",
@@ -49,8 +54,8 @@ const PHASES: Phase[] = [
     items: [
       {
         title: "Custom domain + HTTPS",
-        note: "Production endpoint hardening.",
-        status: "PLANNED",
+        note: "orvix.network serving /v1 over TLS.",
+        status: "SHIPPED",
       },
       {
         title: "Provider onboarding CLI",
@@ -59,12 +64,12 @@ const PHASES: Phase[] = [
       },
       {
         title: "Multi-provider routing",
-        note: "Load-balanced inference across nodes.",
-        status: "PLANNED",
+        note: "Least-loaded node selection, priority tiers first.",
+        status: "SHIPPED",
       },
       {
         title: "Real payout flow activation",
-        note: "USDC settlement to providers.",
+        note: "USDC settlement merged, stub mode until activation.",
         status: "IN PROGRESS",
       },
     ],
