@@ -76,9 +76,9 @@ const PHASES: Phase[] = [
   },
 ];
 
-function PhaseColumn({ phase, withSep }: { phase: Phase; withSep: boolean }) {
+function PhaseColumn({ phase }: { phase: Phase }) {
   return (
-    <div className={`pt-12 md:px-10 ${withSep ? "md:dash-sep-r-desktop" : ""}`}>
+    <div className="pt-12 md:px-10">
       <Badge tone={phase.tone}>{phase.badge}</Badge>
       <ul className="mt-8 space-y-6">
         {phase.items.map((item) => (
@@ -100,9 +100,9 @@ function PhaseColumn({ phase, withSep }: { phase: Phase; withSep: boolean }) {
 export function Roadmap() {
   return (
     <section className="px-[4%] py-12">
-      <div className="mx-auto grid max-w-7xl grid-cols-1 md:grid-cols-2">
-        {PHASES.map((phase, i) => (
-          <PhaseColumn key={phase.badge} phase={phase} withSep={i < PHASES.length - 1} />
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-x-10 md:grid-cols-2">
+        {PHASES.map((phase) => (
+          <PhaseColumn key={phase.badge} phase={phase} />
         ))}
       </div>
     </section>

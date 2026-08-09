@@ -23,15 +23,9 @@ const ROWS: Row[] = [
 
 function CellValue({ value, primary }: { value: Cell; primary: boolean }) {
   if (typeof value === "boolean") {
-    return (
-      <span className={value ? "text-[#26CC6B]" : "text-[#5A5A5A]"}>
-        {value ? "✓" : "✗"}
-      </span>
-    );
+    return <span className={value ? "text-[#26CC6B]" : "text-[#5A5A5A]"}>{value ? "✓" : "✗"}</span>;
   }
-  return (
-    <span className={primary ? "text-white" : "text-[#BABABA]"}>{value}</span>
-  );
+  return <span className={primary ? "text-white" : "text-[#BABABA]"}>{value}</span>;
 }
 
 export function ComparisonTable() {
@@ -45,7 +39,7 @@ export function ComparisonTable() {
         />
 
         {/* Header row */}
-        <div className="dash-border-b grid grid-cols-4 pb-4">
+        <div className="grid grid-cols-4 border-b border-[#1F1F1F] pb-4">
           <span className="font-dm-mono text-xs uppercase tracking-[0.12em] text-[#5A5A5A]">
             Capability
           </span>
@@ -66,7 +60,7 @@ export function ComparisonTable() {
           {ROWS.map((row) => (
             <div
               key={row.label}
-              className="dash-border-b grid grid-cols-4 items-center py-4 text-[14px]"
+              className="grid grid-cols-4 items-center border-b border-[#1F1F1F] py-4 text-[14px]"
             >
               <span className="text-[#ACACAC]">{row.label}</span>
               {row.cells.map((cell, i) => (

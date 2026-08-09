@@ -31,8 +31,14 @@ body {
 /* Asentum CSS (see reference/asentum-to-orvix-prompt.md in the asentum repo). */
 /* -------------------------------------------------------------------------- */
 
-/* Fonts + dashed dividers registered as Tailwind utilities so responsive/
-   state variants (md:, etc.) generate correctly. */
+/* Landing fonts registered as Tailwind utilities so responsive/state variants
+   (md:, etc.) generate correctly.
+
+   The dashed divider utilities that used to live here are gone, along with the
+   fixed page guides that framed the layout: together they drew a dashed grid
+   over the whole page, which read as busy rather than structural. Sections now
+   separate with the same 1px #1F1F1F hairline the rest of the site uses, and
+   columns rely on spacing alone. */
 @layer utilities {
   .font-albert {
     font-family: var(--font-albert), sans-serif;
@@ -42,35 +48,6 @@ body {
   }
   .font-dm-mono {
     font-family: var(--font-dm-mono), monospace;
-  }
-
-  /* Dashed horizontal dividers (16px dash / 12px gap, #363636). */
-  .dash-border-t {
-    background-image: repeating-linear-gradient(90deg, #363636 0 16px, #0000 16px 28px);
-    background-repeat: no-repeat;
-    background-size: 100% 1px;
-    background-position: top;
-    border-top: none !important;
-  }
-  .dash-border-b {
-    background-image: repeating-linear-gradient(90deg, #363636 0 16px, #0000 16px 28px);
-    background-repeat: no-repeat;
-    background-size: 100% 1px;
-    background-position: bottom;
-    border-bottom: none !important;
-  }
-
-  /* Dashed vertical separators. */
-  .dash-vertical {
-    background-image: repeating-linear-gradient(#363636 0 16px, #0000 16px 28px);
-    background-repeat: no-repeat;
-    background-size: 1px 100%;
-  }
-  .dash-sep-r-desktop {
-    background-image: repeating-linear-gradient(#363636 0 16px, #0000 16px 28px);
-    background-repeat: no-repeat;
-    background-size: 1px 100%;
-    background-position: 100%;
   }
 }
 
@@ -93,26 +70,6 @@ body {
 }
 .corner-pop-hover:hover .corner-mark {
   animation: corner-pop 0.3s ease-out;
-}
-
-/* Left/right dashed page guides at 4% — scoped to the landing page (Asentum
-   puts these on body::before/::after; we scope them so other routes are clean). */
-.asentum-page::before,
-.asentum-page::after {
-  content: "";
-  z-index: 30;
-  pointer-events: none;
-  background-image: repeating-linear-gradient(#363636 0 16px, #0000 16px 28px);
-  width: 1px;
-  position: fixed;
-  top: 0;
-  bottom: 0;
-}
-.asentum-page::before {
-  left: 4%;
-}
-.asentum-page::after {
-  right: 4%;
 }
 
 /* Custom scrollbar */

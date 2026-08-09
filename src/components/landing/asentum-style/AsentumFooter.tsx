@@ -53,8 +53,7 @@ const BOTTOM_LINKS: FooterLink[] = [
 ];
 
 function FooterAnchor({ link }: { link: FooterLink }) {
-  const className =
-    "text-[14px] text-[#7D7D7D] transition-colors hover:text-white";
+  const className = "text-[14px] text-[#7D7D7D] transition-colors hover:text-white";
   if (link.external) {
     return (
       <a href={link.href} target="_blank" rel="noreferrer" className={className}>
@@ -71,13 +70,11 @@ function FooterAnchor({ link }: { link: FooterLink }) {
 
 export function AsentumFooter() {
   return (
-    <footer className="dash-border-t bg-[#0A0A0A]">
+    <footer className="border-t border-[#1F1F1F] bg-[#0A0A0A]">
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-[4%] py-16 md:grid-cols-3">
         {COLUMNS.map((col) => (
           <div key={col.title} className="flex flex-col gap-4">
-            <span className="font-plus text-[15px] font-semibold text-white">
-              {col.title}
-            </span>
+            <span className="font-plus text-[15px] font-semibold text-white">{col.title}</span>
             <div className="flex flex-col gap-3">
               {col.links.map((link) => (
                 <FooterAnchor key={link.label + link.href} link={link} />
@@ -88,7 +85,7 @@ export function AsentumFooter() {
       </div>
 
       {/* Bottom bar */}
-      <div className="dash-border-t bg-[#080808]">
+      <div className="border-t border-[#1F1F1F] bg-[#080808]">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-[4%] py-6 md:flex-row md:items-center">
           <span className="font-dm-mono text-xs uppercase tracking-[0.12em] text-[#5A5A5A]">
             © 2026 Orvix

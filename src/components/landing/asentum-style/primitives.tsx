@@ -1,9 +1,9 @@
 // Small shared building blocks for the Asentum-style landing page.
 import Image from "next/image";
 
-// Empty dashed-top spacer used between major sections (Asentum's divider rows).
+// Empty spacer with a hairline top, used between major sections.
 export function SectionDivider() {
-  return <section className="dash-border-t min-h-[70px] px-[4%]" />;
+  return <section className="min-h-[70px] border-t border-[#1F1F1F] px-[4%]" />;
 }
 
 // Dual-color display heading: gray lead-in + white emphasis (Asentum's headline
@@ -20,9 +20,7 @@ export function DualHeading({
   className?: string;
 }) {
   return (
-    <Tag
-      className={`font-plus font-bold leading-[1.15] tracking-tight ${className}`}
-    >
+    <Tag className={`font-plus font-bold leading-[1.15] tracking-tight ${className}`}>
       <span className="text-[#ACACAC]">{lead} </span>
       <span className="text-white">{emphasis}</span>
     </Tag>
@@ -32,11 +30,7 @@ export function DualHeading({
 // Placeholder gradient for image slots until real assets are dropped in.
 // TODO(orvix): swap for real artwork when available.
 export function ImagePlaceholder({ className = "" }: { className?: string }) {
-  return (
-    <div
-      className={`w-full bg-gradient-to-b from-[#1A1A1A] to-[#0A0A0A] ${className}`}
-    />
-  );
+  return <div className={`w-full bg-gradient-to-b from-[#1A1A1A] to-[#0A0A0A] ${className}`} />;
 }
 
 // Framed brand artwork for image slots. Fills its sized parent and adds a subtle

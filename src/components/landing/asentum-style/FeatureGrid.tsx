@@ -42,23 +42,11 @@ export function FeatureGrid() {
   return (
     <section className="px-[4%]">
       <div className="mx-auto grid max-w-7xl grid-cols-1 md:grid-cols-3">
-        {FEATURES.map((f, i) => (
-          <div
-            key={f.badge}
-            className={`flex flex-col pb-0 pt-12 md:px-8 ${
-              i < FEATURES.length - 1 ? "md:dash-sep-r-desktop" : ""
-            }`}
-          >
+        {FEATURES.map((f) => (
+          <div key={f.badge} className="flex flex-col pb-0 pt-12 md:px-8">
             <Badge tone={f.tone}>{f.badge}</Badge>
-            <p className="mt-2 text-[15px] leading-relaxed text-[#BABABA]">
-              {f.body}
-            </p>
-            <AssetImage
-              src={f.image.src}
-              alt={f.image.alt}
-              fit="contain"
-              className="mt-8 h-40"
-            />
+            <p className="mt-2 text-[15px] leading-relaxed text-[#BABABA]">{f.body}</p>
+            <AssetImage src={f.image.src} alt={f.image.alt} fit="contain" className="mt-8 h-40" />
           </div>
         ))}
       </div>
