@@ -1,5 +1,6 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { cn } from "@/lib/utils/cn";
 
 /** Shared chrome for public marketing/content pages (landing-style). */
 export function PublicShell({ children }: { children: React.ReactNode }) {
@@ -34,18 +35,26 @@ export function PageIntro({
   );
 }
 
-/** A titled content block separated by a hairline, matching the landing rhythm. */
+/** A titled content block separated by a hairline, matching the landing rhythm.
+ *  `wide` drops the prose measure for sections whose content is a table or a
+ *  code block that reads badly when wrapped at 2xl. */
 export function Section({
+  id,
   title,
+  wide = false,
   children,
 }: {
+  id?: string;
   title: string;
+  wide?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <section className="border-t border-border py-8">
+    <section id={id} className="scroll-mt-24 border-t border-border py-8">
       <h2 className="text-lg font-medium">{title}</h2>
-      <div className="mt-3 max-w-2xl space-y-3 text-text-secondary">{children}</div>
+      <div className={cn("mt-3 space-y-3 text-text-secondary", wide ? "max-w-4xl" : "max-w-2xl")}>
+        {children}
+      </div>
     </section>
   );
 }
