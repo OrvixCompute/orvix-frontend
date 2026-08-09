@@ -41,15 +41,10 @@ const PHASES: Phase[] = [
         note: "Bronze to Diamond: fee discount, rate limit, node priority.",
         status: "SHIPPED",
       },
-      {
-        title: "ORVX staking + buyback",
-        note: "Engine merged and running in stub mode. Goes live with the ORVX mint.",
-        status: "IN PROGRESS",
-      },
     ],
   },
   {
-    tone: "yellow",
+    tone: "green",
     badge: "Phase 2 · Public Beta",
     items: [
       {
@@ -74,11 +69,42 @@ const PHASES: Phase[] = [
       },
     ],
   },
+  {
+    tone: "blue",
+    badge: "Phase 3 · Token economy",
+    items: [
+      {
+        title: "ORVX mint launch",
+        note: "The gate on the rest of this phase — stake deposits cannot be credited without it.",
+        status: "PLANNED",
+      },
+      {
+        title: "Staking live",
+        note: "Deposits credit, tiers above bronze become reachable.",
+        status: "PLANNED",
+      },
+      {
+        title: "Buyback + burn activation",
+        note: "Engine already merged and running in stub mode; flips to real on-chain swaps and burns.",
+        status: "PLANNED",
+      },
+      {
+        title: "Compute credits",
+        note: "Staking earns a recurring allowance spendable on inference.",
+        status: "PLANNED",
+      },
+      {
+        title: "Staker revenue share",
+        note: "A cut of network revenue paid out to stakers.",
+        status: "PLANNED",
+      },
+    ],
+  },
 ];
 
 function PhaseColumn({ phase }: { phase: Phase }) {
   return (
-    <div className="pt-12 md:px-10">
+    <div className="pt-12 md:px-6 lg:px-8">
       <Badge tone={phase.tone}>{phase.badge}</Badge>
       <ul className="mt-8 space-y-6">
         {phase.items.map((item) => (
@@ -100,7 +126,9 @@ function PhaseColumn({ phase }: { phase: Phase }) {
 export function Roadmap() {
   return (
     <section className="px-[4%] py-12">
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-x-10 md:grid-cols-2">
+      {/* Three phases stay two-up at md — three columns there leaves each item's
+          title and status badge fighting for ~150px — and go three-up at lg. */}
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-x-8 md:grid-cols-2 lg:grid-cols-3">
         {PHASES.map((phase) => (
           <PhaseColumn key={phase.badge} phase={phase} />
         ))}
