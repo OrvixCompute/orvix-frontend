@@ -23,6 +23,8 @@ export interface StubbedResponse {
   status?: number;
   /** Omit for a 204-style empty body. */
   body?: unknown;
+  /** Response headers. Some behaviour rides on these, e.g. X-Orvix-Quota-Reset. */
+  headers?: Record<string, string>;
 }
 
 type Handler = StubbedResponse | ((request: RecordedRequest) => StubbedResponse);
@@ -88,15 +90,18 @@ export function stubHttp(routes: Routes): HttpStub {
       );
     }
 
-    const { status = 200, body: responseBody } =
-      typeof handler === "function" ? handler(recorded) : handler;
+    const {
+      status = 200,
+      body: responseBody,
+      headers = {},
+    } = typeof handler === "function" ? handler(recorded) : handler;
 
     if (responseBody === undefined) {
-      return new Response(null, { status });
+      return new Response(null, { status, headers });
     }
     return new Response(JSON.stringify(responseBody), {
       status,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...headers },
     });
   }) as typeof fetch;
 

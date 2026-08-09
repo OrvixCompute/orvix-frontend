@@ -1,32 +1,27 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ImagePanel } from "@/components/dashboard/playground/ImagePanel";
+import { renderWithStore } from "@/lib/testing/renderWithStore";
+import { stubHttp, type HttpStub } from "@/lib/testing/stubHttp";
+import {
+  clearPlaygroundStorage,
+  playgroundRoutes,
+  seedPlaygroundKey,
+} from "@/lib/testing/playgroundFixtures";
 import { DEFAULT_IMAGE_MODEL, sizesForModel } from "@/lib/constants/models";
 
-const mockSelectorState: { auth: { token: string | null; user: { wallet: string } | null } } = {
-  auth: { token: "jwt", user: { wallet: "wallet-1" } },
-};
+let http: HttpStub;
 
-jest.mock("@/lib/store/hooks", () => ({
-  useAppSelector: (sel: (s: unknown) => unknown) => sel(mockSelectorState),
-  useAppDispatch: () => jest.fn(),
-}));
-
-jest.mock("@/lib/inference/usePlaygroundKey", () => ({
-  usePlaygroundKey: () => ({
-    wallet: "wallet-1",
-    ensureApiKey: jest.fn(async () => "orvx_sk_test"),
-    forgetKey: jest.fn(),
-  }),
-}));
-
-jest.mock("@/lib/store/api/accountApi", () => ({
-  useGetQuotaQuery: () => ({ data: undefined, refetch: jest.fn() }),
-}));
+beforeEach(() => {
+  clearPlaygroundStorage();
+  seedPlaygroundKey();
+  http = stubHttp(playgroundRoutes());
+});
+afterEach(() => http?.restore());
 
 describe("ImagePanel form validation", () => {
   it("disables Generate until the prompt meets the minimum length", async () => {
-    render(<ImagePanel />);
+    renderWithStore(<ImagePanel />);
     const generate = screen.getByRole("button", { name: /generate/i });
     expect(generate).toBeDisabled();
 
@@ -37,12 +32,15 @@ describe("ImagePanel form validation", () => {
 
     await userEvent.type(prompt, "!"); // now 3 chars
     expect(generate).toBeEnabled();
+    // Nothing was dispatched while the form was invalid.
+    expect(http.sent("POST /v1/images/generations")).toHaveLength(0);
   });
 
   it("offers only the sizes the selected model can produce", () => {
-    render(<ImagePanel />);
+    renderWithStore(<ImagePanel />);
     const size = screen.getByLabelText(/size/i) as HTMLSelectElement;
     const allowed = sizesForModel(DEFAULT_IMAGE_MODEL);
+
     expect(size.options).toHaveLength(allowed.length);
     // Sizes past the model's max_size would come back as 400 invalid_size.
     expect(Array.from(size.options).map((o) => o.value)).toEqual(allowed);
@@ -50,7 +48,7 @@ describe("ImagePanel form validation", () => {
   });
 
   it("drops a size the newly selected model cannot produce", async () => {
-    render(<ImagePanel />);
+    renderWithStore(<ImagePanel />);
     const model = screen.getByLabelText(/model/i) as HTMLSelectElement;
     const size = screen.getByLabelText(/size/i) as HTMLSelectElement;
 
@@ -61,5 +59,29 @@ describe("ImagePanel form validation", () => {
 
     await userEvent.selectOptions(model, "orvix-image-1");
     expect(size.value).toBe("1024x1024");
+  });
+
+  it("sends the chosen model and size to the API", async () => {
+    http.restore();
+    http = stubHttp(
+      playgroundRoutes({
+        "POST /v1/images/generations": {
+          body: { created: 1, data: [{ url: "https://orvix.network/images/x.png" }] },
+        },
+      }),
+    );
+    renderWithStore(<ImagePanel />);
+
+    await userEvent.selectOptions(screen.getByLabelText(/model/i), "flux-schnell");
+    await userEvent.selectOptions(screen.getByLabelText(/size/i), "1536x1536");
+    await userEvent.type(screen.getByLabelText(/prompt/i), "a red panda");
+    await userEvent.click(screen.getByRole("button", { name: /generate/i }));
+
+    await screen.findByRole("img", { name: /a red panda/i });
+    expect(http.sent("POST /v1/images/generations")[0].body).toMatchObject({
+      model: "flux-schnell",
+      size: "1536x1536",
+      prompt: "a red panda",
+    });
   });
 });
