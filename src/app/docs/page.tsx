@@ -30,6 +30,7 @@ const TOC = [
   { label: "quotas", href: "#quotas" },
   { label: "errors", href: "#errors" },
   { label: "endpoints", href: "#endpoints" },
+  { label: "running a node", href: "#node" },
 ] as const;
 
 const STEPS = [
@@ -428,7 +429,7 @@ const ENDPOINTS: Endpoint[] = [
     method: "POST",
     path: "/v1/provider/register",
     auth: "JWT",
-    desc: "Register as a provider — requires a 25,000 ORVX stake",
+    desc: "Register as a provider and receive a node secret",
   },
   {
     group: "Provider",
@@ -905,6 +906,29 @@ for chunk in stream:
         </div>
       </Section>
 
+      <Section id="node" title="Running a node">
+        <p>
+          The provider endpoints above are the account side of running hardware. The machine itself
+          runs <Mono>orvix-node</Mono>, a Python agent published on PyPI: it holds an outbound
+          WebSocket to the orchestrator, registers its GPU, and serves the chat and image jobs it is
+          dispatched. No inbound port required.
+        </p>
+        <CodeBlock
+          language="bash"
+          code={`pip install orvix-node
+orvix-node join     # provider_id + node_secret from /v1/provider/register
+orvix-node start`}
+        />
+        <p>
+          Inference is mocked until you switch the backend to vLLM, so you can verify the connection
+          before committing a GPU. See the{" "}
+          <Link href={routes.providers} className="text-text-primary hover:text-accent-hover">
+            provider guide
+          </Link>{" "}
+          for hardware requirements, configuration, and the full command list.
+        </p>
+      </Section>
+
       <Section title="Next steps">
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
           <Link
@@ -913,6 +937,14 @@ for chunk in stream:
           >
             Run a provider node <ArrowRight size={14} />
           </Link>
+          <a
+            href="https://pypi.org/project/orvix-node/"
+            target="_blank"
+            rel="noreferrer"
+            className="text-text-secondary transition-colors hover:text-text-primary"
+          >
+            orvix-node on PyPI
+          </a>
           <Link
             href={routes.whitepaper}
             className="text-text-secondary transition-colors hover:text-text-primary"
