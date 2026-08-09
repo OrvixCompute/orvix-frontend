@@ -10,15 +10,18 @@ export const metadata: Metadata = {
     "Transparent, per-token pricing in USDC. Up to 17x cheaper than hosted incumbents, with no rate-limit games.",
 };
 
+// Per 1K tokens in USDC, mirroring the orchestrator's PRICING table.
 const ROWS = [
-  { model: "qwen-2.5-7b", input: "$0.00", output: "$0.00", vs: "17x cheaper" },
-  { model: "llama-3-8b", input: "soon", output: "soon", vs: "—" },
+  { model: "qwen-2.5-7b", input: "$0.0001", output: "$0.0002", status: "live" },
+  { model: "mistral-7b", input: "$0.0001", output: "$0.0002", status: "in catalog" },
+  { model: "llama-3.1-8b-quantized", input: "$0.00008", output: "$0.00016", status: "in catalog" },
 ];
 
 const TIERS = [
-  { tier: "bronze", stake: "0 ORVX", discount: "0%" },
-  { tier: "silver", stake: "10,000 ORVX", discount: "5%" },
-  { tier: "gold", stake: "50,000 ORVX", discount: "15%" },
+  { tier: "bronze", stake: "0 ORVX", discount: "0%", rpm: "60/min" },
+  { tier: "silver", stake: "10,000 ORVX", discount: "5%", rpm: "120/min" },
+  { tier: "gold", stake: "50,000 ORVX", discount: "15%", rpm: "300/min" },
+  { tier: "diamond", stake: "250,000 ORVX", discount: "25%", rpm: "600/min" },
 ];
 
 export default function PricingPage() {
@@ -38,7 +41,7 @@ export default function PricingPage() {
                 <th className="py-2 pr-6 text-left font-normal">model</th>
                 <th className="py-2 pr-6 text-left font-normal">input</th>
                 <th className="py-2 pr-6 text-left font-normal">output</th>
-                <th className="py-2 text-left font-normal">vs OpenAI</th>
+                <th className="py-2 text-left font-normal">status</th>
               </tr>
             </thead>
             <tbody>
@@ -47,13 +50,46 @@ export default function PricingPage() {
                   <td className="py-2 pr-6 text-text-primary">{row.model}</td>
                   <td className="py-2 pr-6">{row.input}</td>
                   <td className="py-2 pr-6">{row.output}</td>
-                  <td className="py-2">{row.vs}</td>
+                  <td className="py-2">{row.status}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-text-tertiary">Prices are per 1K tokens, settled in USDC.</p>
+        <p className="text-xs text-text-tertiary">
+          Prices are per 1K tokens, settled in USDC. &ldquo;In catalog&rdquo; means the model is
+          priced and ready but no node is serving it right now —{" "}
+          <Link href={routes.docs} className="text-text-secondary hover:text-text-primary">
+            GET /v1/models
+          </Link>{" "}
+          reports live availability.
+        </p>
+      </Section>
+
+      <Section title="Image pricing">
+        <p>
+          Image generation is priced per 1024 × 1024 image and scales with pixel count, so a 512 ×
+          512 costs proportionally less and a 1536 × 1536 proportionally more.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full max-w-md font-mono text-xs">
+            <thead>
+              <tr className="text-text-muted">
+                <th className="py-2 pr-6 text-left font-normal">unit</th>
+                <th className="py-2 text-left font-normal">price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-t border-border text-text-secondary">
+                <td className="py-2 pr-6 text-text-primary">1024 × 1024 image</td>
+                <td className="py-2">$0.05</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-text-tertiary">
+          Charged only past your free daily allowance. Generated images are deleted after 24 hours.
+        </p>
       </Section>
 
       <Section title="How billing works">
@@ -65,14 +101,19 @@ export default function PricingPage() {
       </Section>
 
       <Section title="Stake for lower fees">
-        <p>Staking ORVX unlocks discount tiers that apply to every request you make.</p>
+        <p>
+          Staking ORVX unlocks tiers that apply to every request you make — a discount on the
+          metered cost, and a higher per-minute ceiling. Your tier comes from staked ORVX, not from
+          your wallet balance.
+        </p>
         <div className="overflow-x-auto">
-          <table className="w-full max-w-md font-mono text-xs">
+          <table className="w-full max-w-xl font-mono text-xs">
             <thead>
               <tr className="text-text-muted">
                 <th className="py-2 pr-6 text-left font-normal">tier</th>
                 <th className="py-2 pr-6 text-left font-normal">stake</th>
-                <th className="py-2 text-left font-normal">discount</th>
+                <th className="py-2 pr-6 text-left font-normal">discount</th>
+                <th className="py-2 text-left font-normal">rate limit</th>
               </tr>
             </thead>
             <tbody>
@@ -80,7 +121,8 @@ export default function PricingPage() {
                 <tr key={t.tier} className="border-t border-border text-text-secondary">
                   <td className="py-2 pr-6 text-text-primary">{t.tier}</td>
                   <td className="py-2 pr-6">{t.stake}</td>
-                  <td className="py-2">{t.discount}</td>
+                  <td className="py-2 pr-6">{t.discount}</td>
+                  <td className="py-2">{t.rpm}</td>
                 </tr>
               ))}
             </tbody>

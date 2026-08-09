@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ImagePanel } from "@/components/dashboard/playground/ImagePanel";
-import { IMAGE_SIZES } from "@/lib/constants/models";
+import { DEFAULT_IMAGE_MODEL, sizesForModel } from "@/lib/constants/models";
 
 const mockSelectorState: { auth: { token: string | null; user: { wallet: string } | null } } = {
   auth: { token: "jwt", user: { wallet: "wallet-1" } },
@@ -39,11 +39,27 @@ describe("ImagePanel form validation", () => {
     expect(generate).toBeEnabled();
   });
 
-  it("offers every supported output size", () => {
+  it("offers only the sizes the selected model can produce", () => {
     render(<ImagePanel />);
     const size = screen.getByLabelText(/size/i) as HTMLSelectElement;
-    expect(size.options).toHaveLength(IMAGE_SIZES.length);
-    // Default is the first (square) size.
+    const allowed = sizesForModel(DEFAULT_IMAGE_MODEL);
+    expect(size.options).toHaveLength(allowed.length);
+    // Sizes past the model's max_size would come back as 400 invalid_size.
+    expect(Array.from(size.options).map((o) => o.value)).toEqual(allowed);
+    expect(size.value).toBe("1024x1024");
+  });
+
+  it("drops a size the newly selected model cannot produce", async () => {
+    render(<ImagePanel />);
+    const model = screen.getByLabelText(/model/i) as HTMLSelectElement;
+    const size = screen.getByLabelText(/size/i) as HTMLSelectElement;
+
+    // flux-schnell reaches 1536x1536; orvix-image-1 stops at 1024x1024.
+    await userEvent.selectOptions(model, "flux-schnell");
+    await userEvent.selectOptions(size, "1536x1536");
+    expect(size.value).toBe("1536x1536");
+
+    await userEvent.selectOptions(model, "orvix-image-1");
     expect(size.value).toBe("1024x1024");
   });
 });

@@ -16,8 +16,9 @@ import {
   IMAGE_COUNT,
   IMAGE_MODELS,
   IMAGE_PROMPT_LIMITS,
-  IMAGE_SIZES,
+  coerceImageSize,
   formatImageSize,
+  sizesForModel,
 } from "@/lib/constants/models";
 import type { QuotaResponse } from "@/lib/types/orvix";
 
@@ -137,6 +138,10 @@ export function ImagePanel() {
   const [result, setResult] = useState<Success | null>(null);
   const [error, setError] = useState<Failure | null>(null);
 
+  // Each image model caps the sizes it will accept, so the dropdown follows the
+  // selected model rather than offering every size the endpoint understands.
+  const sizeOptions = sizesForModel(model);
+
   const trimmed = prompt.trim();
   const tooShort = trimmed.length < IMAGE_PROMPT_LIMITS.min;
   const canGenerate = !!token && !tooShort && !generating;
@@ -240,7 +245,12 @@ export function ImagePanel() {
               id="img-model"
               value={model}
               disabled={generating}
-              onChange={(e) => setModel(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                setModel(next);
+                // Switching to a smaller model must not leave a size it rejects.
+                setSize((current) => coerceImageSize(next, current));
+              }}
               className={selectClass}
             >
               {IMAGE_MODELS.map((m) => (
@@ -262,7 +272,7 @@ export function ImagePanel() {
               onChange={(e) => setSize(e.target.value)}
               className={selectClass}
             >
-              {IMAGE_SIZES.map((s) => (
+              {sizeOptions.map((s) => (
                 <option key={s} value={s}>
                   {formatImageSize(s)}
                 </option>
@@ -281,13 +291,14 @@ export function ImagePanel() {
               onChange={(e) => setN(Number(e.target.value))}
               className={selectClass}
             >
-              {Array.from({ length: IMAGE_COUNT.max - IMAGE_COUNT.min + 1 }, (_, i) => i + IMAGE_COUNT.min).map(
-                (v) => (
-                  <option key={v} value={v}>
-                    {v}
-                  </option>
-                ),
-              )}
+              {Array.from(
+                { length: IMAGE_COUNT.max - IMAGE_COUNT.min + 1 },
+                (_, i) => i + IMAGE_COUNT.min,
+              ).map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -305,11 +316,7 @@ export function ImagePanel() {
             )}
           </Button>
           <p className="text-center text-xs text-text-tertiary">
-            {!token
-              ? "Connect your wallet to generate images"
-              : quota
-                ? quotaLabel(quota)
-                : " "}
+            {!token ? "Connect your wallet to generate images" : quota ? quotaLabel(quota) : " "}
           </p>
         </div>
       </div>
@@ -392,7 +399,9 @@ function ResultView({ result }: { result: Success }) {
       <dl className="space-y-1.5 border-t border-dashed border-border pt-3 text-xs">
         <Meta label="Prompt" value={result.prompt} />
         <Meta label="Size" value={formatImageSize(result.size)} />
-        {result.images[0]?.seed != null && <Meta label="Seed" value={String(result.images[0].seed)} />}
+        {result.images[0]?.seed != null && (
+          <Meta label="Seed" value={String(result.images[0].seed)} />
+        )}
         <Meta label="Generated in" value={`${(result.elapsedMs / 1000).toFixed(1)}s`} />
       </dl>
 
