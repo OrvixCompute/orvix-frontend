@@ -27,13 +27,15 @@ jest.mock("@/lib/store/api/accountApi", () => ({
 }));
 
 describe("ImagePanel quota display", () => {
-  it("shows the grace-period allowance", () => {
+  it("states the daily allowance without qualifying it", () => {
+    // Holder gating is inactive (no ORVX mint configured), so this allowance is
+    // simply what an account gets — it must not be labelled a grace period.
     mockQuota.current = {
       is_holder: false,
-      image: { type: "grace", daily_limit: 1, used_today: 0 },
+      image: { type: "grace_daily", daily_limit: 50, used_today: 3 },
     };
     render(<ImagePanel />);
-    expect(screen.getByText(/1\/1 image remaining today \(grace period\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/^47\/50 images remaining today$/i)).toBeInTheDocument();
   });
 
   it("shows the holder allowance and remaining count", () => {

@@ -42,12 +42,17 @@ interface Failure {
   timeout: boolean;
 }
 
-/** "1/1 images remaining today (grace period)". */
+/** "50/50 images remaining today", or "… (holder)" once holder gating is live.
+ *
+ *  The non-holder case is deliberately unqualified. It used to read "(grace
+ *  period)", which told everyone their allowance was a temporary reprieve --
+ *  but ORVX_MINT_ADDRESS is unset, so holder gating is inactive and this daily
+ *  limit is simply what an account gets. */
 function quotaLabel(q: QuotaResponse): string {
   const remaining = Math.max(0, q.image.daily_limit - q.image.used_today);
   const holder = q.image.type === "holder_daily" || q.is_holder;
   const noun = q.image.daily_limit === 1 ? "image" : "images";
-  return `${remaining}/${q.image.daily_limit} ${noun} remaining today (${holder ? "holder" : "grace period"})`;
+  return `${remaining}/${q.image.daily_limit} ${noun} remaining today${holder ? " (holder)" : ""}`;
 }
 
 /** ISO timestamp → "2h 5m" until it, or null when unknown/past. */
@@ -94,9 +99,12 @@ function describeError(err: Failure): {
         cta: { label: "Buy ORVX or top up USDC", href: "/pricing" },
       };
     case 403:
+      // Only reachable once ORVX_MINT_ADDRESS is configured. The server states
+      // the threshold (from ORVX_HOLDER_THRESHOLD) and the caller's balance, so
+      // repeating a number here would only be a guess that goes stale.
       return {
         headline: "Holders only",
-        detail: err.message || "Hold 10,000 ORVX to unlock image generation.",
+        detail: err.message,
         cta: { label: "Learn about ORVX", href: "/tokenomics" },
       };
     case 429: {
