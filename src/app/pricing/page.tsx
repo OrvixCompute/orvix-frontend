@@ -68,8 +68,8 @@ export default function PricingPage() {
 
       <Section title="Image pricing">
         <p>
-          Image generation is priced per 1024 × 1024 image and scales with pixel count, so a 512 ×
-          512 costs proportionally less and a 1536 × 1536 proportionally more.
+          Image generation is priced per megapixel and scales with area, so a 512 × 512 costs a
+          quarter of a 1024 × 1024 and a 1536 × 1536 a little over twice as much.
         </p>
         <div className="overflow-x-auto">
           <table className="w-full max-w-md font-mono text-xs">
@@ -81,8 +81,12 @@ export default function PricingPage() {
             </thead>
             <tbody>
               <tr className="border-t border-border text-text-secondary">
+                <td className="py-2 pr-6 text-text-primary">per megapixel</td>
+                <td className="py-2">0.05 USDC</td>
+              </tr>
+              <tr className="border-t border-border text-text-secondary">
                 <td className="py-2 pr-6 text-text-primary">1024 × 1024 image</td>
-                <td className="py-2">$0.05</td>
+                <td className="py-2">≈ 0.05 USDC</td>
               </tr>
             </tbody>
           </table>
@@ -92,11 +96,24 @@ export default function PricingPage() {
         </p>
       </Section>
 
+      <Section title="Start free">
+        <p>
+          Every account gets <span className="text-text-primary">1000 chat requests</span> as a
+          lifetime allowance and <span className="text-text-primary">50 images per day</span>,
+          resetting at 00:00 UTC. Nothing is charged until that allowance runs out, and ordinary
+          usage rarely reaches the paid path. Allowances are the same for everyone.
+        </p>
+      </Section>
+
       <Section title="How billing works">
         <p>
           Top up a USDC balance, create an API key, and start making requests. Each completed
           request deducts the exact metered cost — you can audit every charge on-chain. There are no
           minimums and no monthly fees.
+        </p>
+        <p>
+          Billing is USDC-only. ORVX is never spent on fees; it changes what you pay only through
+          the stake-based discount below.
         </p>
       </Section>
 

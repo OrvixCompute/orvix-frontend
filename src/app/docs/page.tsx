@@ -6,13 +6,13 @@ import { CodeExample } from "@/components/landing/CodeExample";
 import { CodeBlock } from "@/components/ui/CodeBlock";
 import { InlineNav } from "@/components/ui/InlineNav";
 import { DocsTable, Mono, type DocsColumn } from "@/components/docs/DocsTable";
-import { routes, dashboardRoutes } from "@/lib/constants/routes";
+import { routes } from "@/lib/constants/routes";
 import { config } from "@/lib/constants/config";
 
 export const metadata: Metadata = {
   title: "Documentation — Orvix",
   description:
-    "Build on Orvix: an OpenAI-compatible chat and image API on a permissionless GPU network, billed in USDC on Solana. Endpoints, parameters, pricing, rate limits, and error codes.",
+    "Build on Orvix: an OpenAI-compatible chat and image API on a permissionless GPU network, billed in USDC on Solana. Quickstart, endpoints, limits, pricing, and error codes.",
 };
 
 const base = `${config.apiUrl}/v1`;
@@ -21,38 +21,18 @@ const TOC = [
   { label: "quickstart", href: "#quickstart" },
   { label: "authentication", href: "#authentication" },
   { label: "chat", href: "#chat" },
-  { label: "streaming", href: "#streaming" },
-  { label: "tool calling", href: "#tools" },
   { label: "images", href: "#images" },
   { label: "models", href: "#models" },
+  { label: "free tier", href: "#free-tier" },
   { label: "pricing", href: "#pricing" },
   { label: "rate limits", href: "#rate-limits" },
-  { label: "quotas", href: "#quotas" },
   { label: "errors", href: "#errors" },
+  { label: "billing", href: "#billing" },
+  { label: "providers", href: "#providers" },
   { label: "endpoints", href: "#endpoints" },
-  { label: "running a node", href: "#node" },
 ] as const;
 
-const STEPS = [
-  {
-    title: "Connect a wallet and top up",
-    body: "Sign in with a Solana wallet and add a USDC balance. Requests are metered per token and billed against this balance.",
-  },
-  {
-    title: "Create an API key",
-    body: "Generate a key in the dashboard. Treat it like a password — it is shown once and authenticates every inference request.",
-  },
-  {
-    title: "Point the OpenAI SDK at Orvix",
-    body: "Swap the base URL and key. Your existing OpenAI code keeps working — no other changes required.",
-  },
-  {
-    title: "Check which models are live",
-    body: "GET /v1/models returns the catalog with an available flag per model. Only models a connected node is actually running can serve a request.",
-  },
-];
-
-// --- Reference data (mirrors the orchestrator; see /v1/models for live state) ---
+// --- Reference data (verified against the orchestrator on main) ---
 
 interface Param {
   name: string;
@@ -109,8 +89,7 @@ const IMAGE_PARAMS: Param[] = [
     name: "size",
     type: "string",
     default: "1024x1024",
-    notes:
-      "256x256, 512x512, 1024x1024, 1024x1792, 1792x1024, 1536x1536 — capped by the model's max.",
+    notes: "Must fit the model's maximum — see the image model table below.",
   },
   { name: "response_format", type: "string", default: "url", notes: "url or b64_json." },
   {
@@ -143,11 +122,7 @@ const CHAT_MODELS: ChatModel[] = [
 
 const IMAGE_MODEL_ROWS = [
   { id: "orvix-image-1", max: "1024 × 1024", note: "Default model for /v1/images/generations." },
-  {
-    id: "flux-schnell",
-    max: "1536 × 1536",
-    note: "In the catalog; served only when a node loads it.",
-  },
+  { id: "flux-schnell", max: "1536 × 1536", note: "Larger canvas, same endpoint." },
 ];
 
 interface Tier {
@@ -155,13 +130,14 @@ interface Tier {
   stake: string;
   discount: string;
   rpm: string;
+  routing: string;
 }
 
 const TIERS: Tier[] = [
-  { tier: "bronze", stake: "0", discount: "0%", rpm: "60" },
-  { tier: "silver", stake: "10,000", discount: "5%", rpm: "120" },
-  { tier: "gold", stake: "50,000", discount: "15%", rpm: "300" },
-  { tier: "diamond", stake: "250,000", discount: "25%", rpm: "600" },
+  { tier: "bronze", stake: "0", discount: "0%", rpm: "60", routing: "any free node" },
+  { tier: "silver", stake: "10,000", discount: "5%", rpm: "120", routing: "any free node" },
+  { tier: "gold", stake: "50,000", discount: "15%", rpm: "300", routing: "least-loaded first" },
+  { tier: "diamond", stake: "250,000", discount: "25%", rpm: "600", routing: "least-loaded first" },
 ];
 
 interface HeaderRow {
@@ -178,11 +154,15 @@ const RESPONSE_HEADERS: HeaderRow[] = [
     meaning: "USDC charged. Absent on streamed responses — billing settles after the stream.",
   },
   { name: "X-Orvix-Node", on: "chat", meaning: "Id of the GPU node that served the job." },
-  { name: "X-Orvix-Quota-Type", on: "chat", meaning: "holder, free, or paid." },
+  {
+    name: "X-Orvix-Quota-Type",
+    on: "chat",
+    meaning: "free while the lifetime allowance lasts, paid once it is spent.",
+  },
   {
     name: "X-Orvix-Quota-Remaining",
     on: "chat, images",
-    meaning: "Free requests left. Omitted when the allowance is unlimited.",
+    meaning: "Requests left in the current allowance.",
   },
   {
     name: "X-Orvix-Quota-Reset",
@@ -198,11 +178,49 @@ interface ErrorRow {
 }
 
 const ERRORS: ErrorRow[] = [
-  { status: "400", code: "invalid_request", meaning: "Malformed body or an unsupported model id." },
+  {
+    status: "503",
+    code: "capacity_exhausted",
+    meaning:
+      "Nodes serve the model but all were busy. Retry — the body carries retry_after_seconds.",
+  },
+  {
+    status: "503",
+    code: "no_chat_provider",
+    meaning:
+      "No node serves that chat model. Retrying will not help — pick one with available:true.",
+  },
+  {
+    status: "503",
+    code: "no_image_provider",
+    meaning: "No node serves that image model. Same as above: switch models rather than retry.",
+  },
+  {
+    status: "429",
+    code: "rate_limit_exceeded",
+    meaning:
+      "Per-minute ceiling for your tier. Body carries tier, bucket, limit_per_minute, retry_after_seconds, upgrade_url.",
+  },
+  {
+    status: "402",
+    code: "insufficient_balance",
+    meaning: "Free allowance spent and the estimated cost exceeds your USDC balance. Top up.",
+  },
+  {
+    status: "401",
+    code: "invalid_api_key",
+    meaning: "Malformed, revoked, or unknown API key.",
+  },
+  {
+    status: "401",
+    code: "unauthorized",
+    meaning: "Missing credential, or an API key sent to a JWT-only endpoint.",
+  },
   {
     status: "400",
     code: "invalid_size",
-    meaning: "Image size the chosen model cannot produce. The message lists the sizes it accepts.",
+    meaning:
+      "Image size larger than the model's maximum. The message lists the sizes that model accepts.",
   },
   {
     status: "400",
@@ -210,43 +228,19 @@ const ERRORS: ErrorRow[] = [
     meaning: "tools sent together with stream: true. Retry with stream: false.",
   },
   {
-    status: "401",
-    code: "unauthorized",
-    meaning:
-      "Missing, revoked, or wrong-scheme credential — e.g. an API key sent to a JWT endpoint.",
+    status: "400",
+    code: "invalid_request",
+    meaning: "Malformed body or an unsupported model id.",
   },
-  {
-    status: "402",
-    code: "insufficient_balance",
-    meaning: "Estimated cost exceeds the USDC balance. Top up in the dashboard.",
-  },
-  { status: "404", code: "not_found", meaning: "No such resource for this account." },
   {
     status: "422",
     code: "invalid_request",
     meaning: "Schema validation failed. details carries the field-level errors.",
   },
   {
-    status: "429",
-    code: "rate_limit_exceeded",
-    meaning:
-      "Per-minute ceiling for your tier. Body carries retry_after_seconds and limit_per_minute.",
-  },
-  {
-    status: "503",
-    code: "capacity_exhausted",
-    meaning: "Nodes serve the model but all stayed busy. Retry after retry_after_seconds.",
-  },
-  {
-    status: "503",
-    code: "no_chat_provider",
-    meaning:
-      "No connected node serves that chat model. Retrying will not help — pick an available one.",
-  },
-  {
-    status: "503",
-    code: "no_image_provider",
-    meaning: "No connected node serves that image model.",
+    status: "404",
+    code: "not_found",
+    meaning: "No such resource for this account.",
   },
   {
     status: "500",
@@ -298,7 +292,7 @@ const ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/v1/account/quota",
     auth: "JWT or key",
-    desc: "Chat and image quota status, plus images generated in the last 24h",
+    desc: "Chat and image allowance status, plus images generated in the last 24h",
   },
 
   {
@@ -306,7 +300,7 @@ const ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/v1/auth/challenge",
     auth: "none",
-    desc: "Challenge string to sign with a Solana wallet",
+    desc: "Message and nonce for the wallet to sign",
   },
   {
     group: "Auth",
@@ -328,7 +322,7 @@ const ENDPOINTS: Endpoint[] = [
     method: "POST",
     path: "/v1/api-keys",
     auth: "JWT",
-    desc: "Create a key — the secret is returned once",
+    desc: "Create a key — the secret is returned once, 10 active maximum",
   },
   {
     group: "API keys",
@@ -357,7 +351,7 @@ const ENDPOINTS: Endpoint[] = [
     method: "POST",
     path: "/v1/billing/topup-intent",
     auth: "JWT",
-    desc: "Create a USDC deposit address and memo",
+    desc: "Treasury address, memo, and solana: QR payload for a USDC deposit",
   },
   {
     group: "Billing",
@@ -478,7 +472,7 @@ const ENDPOINTS: Endpoint[] = [
     method: "POST",
     path: "/v1/provider/withdraw",
     auth: "JWT",
-    desc: "Request a payout of accumulated earnings",
+    desc: "Request a payout — minimum 1 USDC, 5 requests per day",
   },
   {
     group: "Provider",
@@ -500,7 +494,7 @@ const ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/v1/network/stats",
     auth: "none",
-    desc: "Compute-side dashboard feed: nodes, GPUs, requests, tokens",
+    desc: "Nodes online, GPU breakdown, request and token volume, model availability",
   },
   {
     group: "Network",
@@ -545,68 +539,104 @@ export default function DocsPage() {
       </Section>
 
       <Section id="quickstart" title="Quickstart">
-        <ol className="space-y-4">
-          {STEPS.map((step, i) => (
-            <li key={step.title} className="flex gap-4">
-              <span className="font-mono text-sm text-text-muted">0{i + 1}</span>
-              <div>
-                <p className="text-text-primary">{step.title}</p>
-                <p className="mt-1 text-text-secondary">{step.body}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
+        <p>
+          Three steps: get a key, make a chat call, make an image call. The first 1000 chat requests
+          and 50 images a day cost nothing, so you can get all the way through this without funding
+          anything.
+        </p>
+        <p className="pt-1 text-text-primary">1. Create an API key</p>
+        <p>
+          Sign in with a Solana wallet and create a key in the dashboard. It is shown once — store
+          it like a password.
+        </p>
+        <p className="pt-1 text-text-primary">2. First chat call</p>
+        <CodeBlock
+          language="bash"
+          code={`curl ${base}/chat/completions \\
+  -H "Authorization: Bearer orvx_sk_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "qwen-2.5-7b",
+    "messages": [{"role": "user", "content": "Hello, Orvix!"}]
+  }'`}
+        />
+        <p className="pt-1 text-text-primary">3. First image call</p>
+        <CodeBlock
+          language="bash"
+          code={`curl ${base}/images/generations \\
+  -H "Authorization: Bearer orvx_sk_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "orvix-image-1",
+    "prompt": "a fox in snow",
+    "size": "1024x1024"
+  }'`}
+        />
         <div className="flex flex-wrap gap-x-6 gap-y-2 pt-2 text-sm">
           <Link
-            href={dashboardRoutes.apiKeys}
+            href={routes.playground}
             className="inline-flex items-center gap-1.5 text-text-primary transition-colors hover:text-accent-hover"
           >
-            Create an API key <ArrowRight size={14} />
+            Try it in the playground <ArrowRight size={14} />
           </Link>
           <Link
-            href={routes.playground}
+            href="#endpoints"
             className="text-text-secondary transition-colors hover:text-text-primary"
           >
-            Open the playground
+            Full endpoint reference
           </Link>
         </div>
       </Section>
 
       <Section id="authentication" title="Authentication">
         <p>
-          Orvix uses two credentials, and they are not interchangeable. Inference runs on an{" "}
-          <Mono>orvx_sk_</Mono> API key; everything that manages an account — keys, billing,
-          staking, provider nodes — runs on a wallet-signed JWT. Sending an API key to a JWT
-          endpoint returns <Mono>401</Mono>, because the key is not a token.
+          Orvix uses two credentials and they are not interchangeable. Inference runs on an{" "}
+          <Mono>orvx_sk_</Mono> API key; account actions — keys, billing, staking, provider nodes —
+          run on a wallet-signed JWT. Sending an API key to a JWT-only endpoint returns{" "}
+          <Mono>401</Mono>, because the key is not a token.
         </p>
         <p>
-          The two read-only status endpoints <Mono>/v1/account/tier</Mono> and{" "}
-          <Mono>/v1/account/quota</Mono> accept either, so a client can check its own tier and quota
+          Two endpoints accept either scheme: <Mono>GET /v1/account/tier</Mono> and{" "}
+          <Mono>GET /v1/account/quota</Mono>, so a client can check its own tier and allowance
           before dispatching work.
         </p>
-        <CodeBlock
-          language="bash"
-          code={`# Inference — API key
-Authorization: Bearer orvx_sk_...
 
-# Account management — wallet-signed JWT
-Authorization: Bearer eyJ...`}
-        />
-        <p className="pt-2">
-          A JWT is obtained by signing a challenge with the wallet that owns the account. The
-          challenge is valid for five minutes and single-use.
+        <p className="pt-2 text-text-primary">API keys</p>
+        <p>
+          Created with <Mono>POST /v1/api-keys</Mono> using a JWT. The secret is returned exactly
+          once and never again — rotate the key if you lose it. You may hold up to <Mono>10</Mono>{" "}
+          active keys, and each can be revoked or rotated independently. An API key cannot create
+          other API keys; that path is JWT-only by design.
+        </p>
+        <CodeBlock language="bash" code={`Authorization: Bearer orvx_sk_...`} />
+
+        <p className="pt-2 text-text-primary">Wallet-signed JWT</p>
+        <p>
+          Request a challenge, sign the returned <Mono>message</Mono> with the wallet, and exchange
+          it for a token. Challenges last five minutes and are single-use. They survive an
+          orchestrator restart, and a wallet may hold several outstanding at once — asking for a new
+          challenge does not invalidate one the user is still signing.
         </p>
         <CodeBlock
           language="bash"
           code={`# 1. Request a challenge
-curl "${config.apiUrl}/v1/auth/challenge?wallet=YOUR_WALLET_ADDRESS"
+curl "${base}/auth/challenge?wallet=YOUR_WALLET_ADDRESS"
 
-# 2. Sign it with the wallet, then exchange it for a JWT
+# => { "message": "Sign this message to authenticate with Orvix: <nonce>",
+#      "nonce": "...", "expires_at": "2026-08-09T12:05:00Z" }
+
+# 2. Sign that exact message, then verify
 curl -X POST ${base}/auth/verify \\
   -H "Content-Type: application/json" \\
-  -d '{"wallet": "YOUR_WALLET_ADDRESS", "signature": "BASE58_SIGNATURE"}'
+  -d '{
+    "wallet": "YOUR_WALLET_ADDRESS",
+    "message": "Sign this message to authenticate with Orvix: <nonce>",
+    "signature": "BASE58_SIGNATURE"
+  }'
 
-# => { "access_token": "eyJ...", "token_type": "bearer" }`}
+# => { "token": "eyJ...",
+#      "user": { "id": "...", "wallet": "...", "tier": "bronze",
+#                "balance_usdc": "0" } }`}
         />
       </Section>
 
@@ -621,34 +651,21 @@ curl -X POST ${base}/auth/verify \\
         </div>
       </Section>
 
-      <Section id="chat-params" title="Request parameters" wide>
+      <Section id="chat-params" title="Chat parameters" wide>
         <DocsTable columns={PARAM_COLUMNS} rows={CHAT_PARAMS} rowKey={(p) => p.name} />
-        <p className="pt-2 text-sm">
+        <p className="max-w-2xl pt-2 text-sm">
           Every response is produced by a real GPU node. If no node can take the job the request
           fails rather than returning a placeholder — see{" "}
           <Link href="#errors" className="text-text-primary hover:text-accent-hover">
             errors
           </Link>{" "}
-          for the two distinct 503s. A chat request waits up to three seconds for a free slot before
-          giving up, and a node has 60 seconds to finish the job.
+          for the two 503s and how they differ.
         </p>
       </Section>
 
-      <Section id="chat-headers" title="Response headers" wide>
-        <DocsTable
-          columns={[
-            { header: "header", cell: (h: HeaderRow) => h.name, emphasis: true },
-            { header: "on", cell: (h: HeaderRow) => h.on },
-            { header: "meaning", cell: (h: HeaderRow) => h.meaning, className: "font-sans" },
-          ]}
-          rows={RESPONSE_HEADERS}
-          rowKey={(h) => h.name}
-        />
-      </Section>
-
-      <Section id="streaming" title="Streaming">
+      <Section id="streaming" title="Streaming and tool calling">
         <p>
-          Set <Mono>stream: true</Mono> to receive server-sent events in the OpenAI chunk format,
+          Set <Mono>stream: true</Mono> for server-sent events in the OpenAI chunk format,
           terminated by <Mono>data: [DONE]</Mono>. Billing settles once the stream finishes, so{" "}
           <Mono>X-Orvix-Cost</Mono> is not present on a streamed response.
         </p>
@@ -663,14 +680,12 @@ curl -X POST ${base}/auth/verify \\
 for chunk in stream:
     print(chunk.choices[0].delta.content or "", end="")`}
         />
-      </Section>
-
-      <Section id="tools" title="Tool calling">
         <p>
-          Pass OpenAI-shaped <Mono>tools</Mono> (and optionally <Mono>tool_choice</Mono>). When the
-          model calls one, the reply carries <Mono>finish_reason: &quot;tool_calls&quot;</Mono> and{" "}
-          <Mono>message.tool_calls</Mono>, with <Mono>message.content</Mono> null. Send the result
-          back as a <Mono>role: &quot;tool&quot;</Mono> message carrying the matching{" "}
+          Tool calling works on the non-streaming path. Pass OpenAI-shaped <Mono>tools</Mono> (and
+          optionally <Mono>tool_choice</Mono>); when the model calls one, the reply carries{" "}
+          <Mono>finish_reason: &quot;tool_calls&quot;</Mono> and <Mono>message.tool_calls</Mono>,
+          with <Mono>message.content</Mono> null. Send the result back as a{" "}
+          <Mono>role: &quot;tool&quot;</Mono> message carrying the matching{" "}
           <Mono>tool_call_id</Mono>.
         </p>
         <CodeBlock
@@ -691,13 +706,25 @@ for chunk in stream:
   }'`}
         />
         <p>
-          Tools cannot be combined with streaming yet — that returns{" "}
+          Tools cannot be combined with streaming. That returns{" "}
           <Mono>400 streaming_tools_unsupported</Mono> rather than silently dropping the calls.
         </p>
       </Section>
 
-      <Section id="images" title="Image generation">
-        <p>
+      <Section id="chat-headers" title="Response headers" wide>
+        <DocsTable
+          columns={[
+            { header: "header", cell: (h: HeaderRow) => h.name, emphasis: true },
+            { header: "on", cell: (h: HeaderRow) => h.on },
+            { header: "meaning", cell: (h: HeaderRow) => h.meaning, className: "font-sans" },
+          ]}
+          rows={RESPONSE_HEADERS}
+          rowKey={(h) => h.name}
+        />
+      </Section>
+
+      <Section id="images" title="Image generation" wide>
+        <p className="max-w-2xl">
           <Mono>POST /v1/images/generations</Mono> follows the OpenAI images shape and authenticates
           with the same API key.
         </p>
@@ -718,19 +745,21 @@ for chunk in stream:
         <div className="pt-2">
           <DocsTable columns={PARAM_COLUMNS} rows={IMAGE_PARAMS} rowKey={(p) => p.name} />
         </div>
-        <p className="pt-2">
-          Generated images are deleted 24 hours after creation — download anything worth keeping. A
-          size larger than the model&apos;s maximum is rejected with <Mono>400 invalid_size</Mono>,
-          and the error message lists the sizes that model does accept.
+        <p className="max-w-2xl pt-2">
+          A size larger than the model&apos;s maximum is rejected with <Mono>400 invalid_size</Mono>
+          , and the message lists the sizes that model does accept. Generated images are deleted 24
+          hours after creation — download anything worth keeping.
         </p>
       </Section>
 
       <Section id="models" title="Models" wide>
         <p className="max-w-2xl">
           <Mono>GET /v1/models</Mono> is public and returns the catalog in the OpenAI shape, plus an
-          Orvix-specific <Mono>available</Mono> flag: <Mono>true</Mono> when a currently connected
-          node runs that model. Check it before dispatching — a catalog-only model returns{" "}
-          <Mono>503</Mono>. Extra fields are ignored by OpenAI clients.
+          Orvix-specific <Mono>available</Mono> boolean: <Mono>true</Mono> only when a connected GPU
+          node actually runs that model. Check it before dispatching. The catalog lists models that
+          may have no node behind them right now, and asking for one of those returns a{" "}
+          <Mono>503</Mono> that no amount of retrying will fix. Extra fields are ignored by OpenAI
+          clients.
         </p>
         <CodeBlock language="bash" code={`curl ${base}/models`} />
         <p className="pt-4 font-mono text-xs text-text-muted">chat models</p>
@@ -764,16 +793,54 @@ for chunk in stream:
         />
       </Section>
 
-      <Section id="pricing" title="Pricing and billing" wide>
+      <Section id="free-tier" title="Free tier">
+        <p>
+          Every account gets <span className="text-text-primary">1000 chat requests</span> as a
+          lifetime allowance and <span className="text-text-primary">50 images per day</span>,
+          resetting at 00:00 UTC. Nothing is charged until the chat allowance is spent, and in
+          practice ordinary usage never reaches the paid path.
+        </p>
+        <p>
+          Allowances are per account and identical for everyone — ORVX holdings do not change them
+          today. Read the live figures rather than assuming:
+        </p>
+        <CodeBlock
+          language="bash"
+          code={`curl ${base}/account/quota \\
+  -H "Authorization: Bearer orvx_sk_..."
+
+# => {
+#   "chat":  { "type": "free_tier", "lifetime_free_used": 12,
+#              "lifetime_free_limit": 1000 },
+#   "image": { "type": "grace_daily", "used_today": 3, "daily_limit": 50,
+#              "generated_images_last_24h": [] }
+# }`}
+        />
+        <p>
+          Chat responses also carry <Mono>X-Orvix-Quota-Type</Mono> and{" "}
+          <Mono>X-Orvix-Quota-Remaining</Mono>, so usage can be tracked without a second request.
+        </p>
+      </Section>
+
+      <Section id="pricing" title="Pricing" wide>
         <p className="max-w-2xl">
-          Chat is metered per token at the rates above and settled in USDC against your balance.
-          Images are priced per 1024 × 1024 equivalent and scale with pixel count. Costs are
-          deducted after the job completes, and the exact amount comes back in{" "}
-          <Mono>X-Orvix-Cost</Mono>.
+          Past the free allowance, chat is metered per token and images per area, both settled in
+          USDC against your balance. Billing is USDC-only — ORVX is never spent on fees; it affects
+          pricing only through the stake-based discount below.
         </p>
         <p className="max-w-2xl">
-          Staking ORVX derives your tier, which sets both the discount applied to every request and
-          your per-minute throughput. Tier is computed from staked ORVX, not wallet balance.
+          Chat rates are in the{" "}
+          <Link href="#models" className="text-text-primary hover:text-accent-hover">
+            model table
+          </Link>{" "}
+          above. Images cost <span className="text-text-primary">0.05 USDC per megapixel</span>,
+          scaled by area — a 1024 × 1024 image is roughly 0.05 USDC, a 512 × 512 a quarter of that.
+          The exact amount charged comes back in <Mono>X-Orvix-Cost</Mono>.
+        </p>
+        <p className="max-w-2xl">
+          Staking ORVX derives your tier, which discounts every charge, raises your per-minute
+          ceiling, and — at gold and diamond — puts your requests on the least-loaded node first.
+          Tier comes from staked ORVX, not wallet balance.
         </p>
         <DocsTable
           columns={[
@@ -781,29 +848,15 @@ for chunk in stream:
             { header: "staked ORVX", cell: (t: Tier) => t.stake },
             { header: "discount", cell: (t: Tier) => t.discount },
             { header: "requests / min", cell: (t: Tier) => t.rpm },
+            { header: "node selection", cell: (t: Tier) => t.routing, className: "font-sans" },
           ]}
           rows={TIERS}
           rowKey={(t) => t.tier}
         />
         <p className="max-w-2xl pt-2 text-sm">
-          Call <Mono>GET /v1/account/tier</Mono> for your current tier, discount, and how much more
-          stake the next one needs. A request whose estimated cost exceeds your balance is refused
-          with <Mono>402 insufficient_balance</Mono> before any GPU time is spent.
+          <Mono>GET /v1/account/tier</Mono> returns your current tier, discount, and how much more
+          stake the next one needs.
         </p>
-        <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1 text-sm">
-          <Link
-            href={routes.staking}
-            className="text-text-primary transition-colors hover:text-accent-hover"
-          >
-            Staking details
-          </Link>
-          <Link
-            href="/pricing"
-            className="text-text-secondary transition-colors hover:text-text-primary"
-          >
-            Pricing page
-          </Link>
-        </div>
       </Section>
 
       <Section id="rate-limits" title="Rate limits">
@@ -818,58 +871,54 @@ for chunk in stream:
   "error": {
     "code": "rate_limit_exceeded",
     "message": "Rate limit exceeded: max 60 chat requests per minute on the bronze tier",
-    "retry_after_seconds": 42,
+    "request_id": "b0f1…",
     "tier": "bronze",
     "bucket": "chat",
     "limit_per_minute": 60,
+    "retry_after_seconds": 42,
     "upgrade_url": "https://orvix.network/pricing"
   }
 }`}
         />
       </Section>
 
-      <Section id="quotas" title="Quotas">
-        <p>
-          Alongside billing, each account has a free allowance. Non-holders get a lifetime pool of
-          free chat requests; holding ORVX above the threshold lifts the chat cap entirely. Images
-          run on a daily allowance that resets at 00:00 UTC. The exact numbers are operator
-          configuration and change over time, so read them rather than hard-coding them.
-        </p>
-        <CodeBlock
-          language="bash"
-          code={`curl ${base}/account/quota \\
-  -H "Authorization: Bearer orvx_sk_..."
-
-# => {
-#   "is_holder": false,
-#   "orvx_balance": "0",
-#   "chat":  { "type": "free_tier", "lifetime_free_used": 12, "lifetime_free_limit": 1000 },
-#   "image": { "type": "grace_daily", "used_today": 3, "daily_limit": 50,
-#              "generated_images_last_24h": [] }
-# }`}
-        />
-        <p>
-          Every chat response also carries <Mono>X-Orvix-Quota-Type</Mono> and, when the allowance
-          is finite, <Mono>X-Orvix-Quota-Remaining</Mono> — enough to track usage without a second
-          request.
-        </p>
-      </Section>
-
       <Section id="errors" title="Errors" wide>
         <p className="max-w-2xl">
-          Every error uses the same envelope. <Mono>code</Mono> is stable and safe to branch on;{" "}
-          <Mono>message</Mono> is for humans. <Mono>request_id</Mono> identifies the request in the
-          orchestrator logs — quote it when reporting a problem. Some codes add fields, such as{" "}
-          <Mono>retry_after_seconds</Mono>.
+          Every error uses the same envelope. <Mono>code</Mono> is stable and safe to branch on,{" "}
+          <Mono>message</Mono> is for humans, and <Mono>request_id</Mono> identifies the request in
+          the orchestrator logs — quote it when reporting a problem. Some codes add fields.
+        </p>
+        <p className="max-w-2xl">
+          The two 503s are the ones you are most likely to meet while the network is still small,
+          and they call for opposite responses. <Mono>capacity_exhausted</Mono> means nodes do serve
+          your model but every one was busy — and chat already waited up to three seconds internally
+          for a slot, so it means the network was saturated for that whole window. Retry it.
         </p>
         <CodeBlock
           language="json"
-          code={`{
+          code={`// 503 — busy. Retry after the given delay.
+{
   "error": {
     "code": "capacity_exhausted",
     "message": "All compute providers serving this model are busy. Retry shortly.",
     "request_id": "b0f1…",
     "retry_after_seconds": 3
+  }
+}`}
+        />
+        <p className="max-w-2xl">
+          <Mono>no_chat_provider</Mono> (and <Mono>no_image_provider</Mono> for images) means no
+          node on the network serves that model at all. Retrying cannot change that — call{" "}
+          <Mono>/v1/models</Mono> and pick one with <Mono>available: true</Mono>.
+        </p>
+        <CodeBlock
+          language="json"
+          code={`// 503 — nobody serves this model. Switch models, do not retry.
+{
+  "error": {
+    "code": "no_chat_provider",
+    "message": "No compute providers are currently available",
+    "request_id": "c7a2…"
   }
 }`}
         />
@@ -886,11 +935,106 @@ for chunk in stream:
         </div>
       </Section>
 
+      <Section id="billing" title="Billing and top-up">
+        <p>
+          Balances are funded with USDC on Solana mainnet.{" "}
+          <Mono>POST /v1/billing/topup-intent</Mono> returns a treasury address, a memo, and a{" "}
+          <Mono>solana:</Mono> QR payload. Send the USDC, and a listener credits your balance
+          automatically — typically within 15 to 30 seconds.
+        </p>
+        <CodeBlock
+          language="bash"
+          code={`curl -X POST ${base}/billing/topup-intent \\
+  -H "Authorization: Bearer <JWT>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"amount": 25}'
+
+# => {
+#   "id": "...",
+#   "treasury_address": "...",
+#   "memo": "orvix_topup_…",
+#   "expected_amount": "25",
+#   "qr_data": "solana:…",
+#   "expires_at": "..."
+# }`}
+        />
+        <p>
+          The memo is recommended but no longer required. Attribution tries the memo first, then
+          falls back to matching the sending wallet against the one registered on your account — so
+          a deposit sent from your own wallet is credited either way.
+        </p>
+        <p>
+          <span className="text-text-primary">One case still needs the memo:</span> a withdrawal
+          sent from an exchange is signed by the exchange&apos;s hot wallet, not yours, so nothing
+          about the sender identifies you. Without the memo such a deposit cannot be attributed.
+        </p>
+        <p>
+          <Mono>GET /v1/billing/balance</Mono>, <Mono>/transactions</Mono> and{" "}
+          <Mono>/topup-intents</Mono> cover the rest: current balance, history, and intents still
+          awaiting a deposit.
+        </p>
+      </Section>
+
+      <Section id="providers" title="Providers">
+        <p>
+          Running a GPU is a separate role from calling the API. Registration, node management,
+          earnings and withdrawals live under <Mono>/v1/provider/*</Mono>, all JWT-authenticated.
+          Providers earn <span className="text-text-primary">70%</span> of each job&apos;s cost,
+          paid in USDC.
+        </p>
+        <p>
+          Withdrawals start at <span className="text-text-primary">1 USDC</span>, and an account may
+          request up to <span className="text-text-primary">5 per day</span>. Requests above 10,000
+          USDC are flagged for manual approval rather than paid automatically, so a large withdrawal
+          will sit queued until an operator handles it — plan around that rather than treating it as
+          instant.
+        </p>
+        <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1 text-sm">
+          <Link
+            href={routes.providers}
+            className="inline-flex items-center gap-1.5 text-text-primary transition-colors hover:text-accent-hover"
+          >
+            Run a node <ArrowRight size={14} />
+          </Link>
+          <a
+            href="https://pypi.org/project/orvix-node/"
+            target="_blank"
+            rel="noreferrer"
+            className="text-text-secondary transition-colors hover:text-text-primary"
+          >
+            orvix-node on PyPI
+          </a>
+        </div>
+      </Section>
+
+      <Section id="public" title="Public endpoints">
+        <p>
+          Three areas need no credential at all, which makes them convenient for dashboards and
+          monitoring.
+        </p>
+        <p>
+          <Mono>GET /v1/network/stats</Mono> is the network dashboard feed: nodes online, GPU
+          breakdown, request and token volume, and how many catalog models actually have a node
+          behind them.
+        </p>
+        <p>
+          <Mono>GET /v1/staking/buyback-history</Mono>, <Mono>/burn-history</Mono> and{" "}
+          <Mono>/network-stats</Mono> cover the token side, each event carrying its Solana signature
+          so it can be verified independently. Stake intents, unstaking and personal stake status
+          sit alongside them under a JWT.
+        </p>
+        <p>
+          <Mono>GET /v1/governance/snapshot-url</Mono> returns the Snapshot space used for off-chain
+          voting.
+        </p>
+      </Section>
+
       <Section id="endpoints" title="Endpoint reference" wide>
         <p className="max-w-2xl">
           Everything the public API exposes, grouped by area. Paths are relative to{" "}
-          <Mono>{config.apiUrl}</Mono>. Operator-only admin endpoints exist behind a separate header
-          and are not part of this surface.
+          <Mono>{config.apiUrl}</Mono>; the frontend calls them same-origin under <Mono>/v1</Mono>.
+          Operator-only admin endpoints exist behind a separate header and are not part of this
+          surface.
         </p>
         <div className="space-y-6 pt-2">
           {ENDPOINT_GROUPS.map((group) => (
@@ -937,14 +1081,6 @@ orvix-node start`}
           >
             Run a provider node <ArrowRight size={14} />
           </Link>
-          <a
-            href="https://pypi.org/project/orvix-node/"
-            target="_blank"
-            rel="noreferrer"
-            className="text-text-secondary transition-colors hover:text-text-primary"
-          >
-            orvix-node on PyPI
-          </a>
           <Link
             href={routes.whitepaper}
             className="text-text-secondary transition-colors hover:text-text-primary"
