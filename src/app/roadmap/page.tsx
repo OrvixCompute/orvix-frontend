@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { PublicShell, PageIntro, Section } from "@/components/layout/PublicShell";
-import { Mono } from "@/components/docs/DocsTable";
+import { DocsTable, Mono } from "@/components/docs/DocsTable";
 import { cn } from "@/lib/utils/cn";
 import { routes } from "@/lib/constants/routes";
 
@@ -180,7 +180,20 @@ const UTILITIES: Utility[] = [
   },
 ];
 
-const LIVE_TIERS = [
+interface LiveTier {
+  tier: string;
+  stake: string;
+  discount: string;
+  rpm: string;
+  routing: string;
+}
+
+interface ProposedTier {
+  tier: string;
+  benefit: string;
+}
+
+const LIVE_TIERS: LiveTier[] = [
   { tier: "bronze", stake: "0", discount: "0%", rpm: "60/min", routing: "any free node" },
   { tier: "silver", stake: "10,000", discount: "5%", rpm: "120/min", routing: "any free node" },
   { tier: "gold", stake: "50,000", discount: "15%", rpm: "300/min", routing: "least-loaded first" },
@@ -193,7 +206,7 @@ const LIVE_TIERS = [
   },
 ];
 
-const PROPOSED_TIERS = [
+const PROPOSED_TIERS: ProposedTier[] = [
   { tier: "silver", benefit: "Fee discount" },
   { tier: "gold", benefit: "Larger discount, priority queue" },
   { tier: "platinum", benefit: "Dedicated compute" },
@@ -272,30 +285,17 @@ export default function RoadmapPage() {
           cannot be credited and every account currently sits at bronze. The ladder is built and
           enforced — it becomes reachable when the token launches.
         </p>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[34rem] font-mono text-xs">
-            <thead>
-              <tr className="text-text-muted">
-                <th className="py-2 pr-6 text-left font-normal">tier</th>
-                <th className="py-2 pr-6 text-left font-normal">staked ORVX</th>
-                <th className="py-2 pr-6 text-left font-normal">discount</th>
-                <th className="py-2 pr-6 text-left font-normal">rate limit</th>
-                <th className="py-2 text-left font-normal">node selection</th>
-              </tr>
-            </thead>
-            <tbody>
-              {LIVE_TIERS.map((t) => (
-                <tr key={t.tier} className="border-t border-border text-text-secondary">
-                  <td className="py-2 pr-6 text-text-primary">{t.tier}</td>
-                  <td className="py-2 pr-6">{t.stake}</td>
-                  <td className="py-2 pr-6">{t.discount}</td>
-                  <td className="py-2 pr-6">{t.rpm}</td>
-                  <td className="py-2 font-sans">{t.routing}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DocsTable
+          columns={[
+            { header: "tier", cell: (t: LiveTier) => t.tier, emphasis: true },
+            { header: "staked ORVX", cell: (t: LiveTier) => t.stake },
+            { header: "discount", cell: (t: LiveTier) => t.discount },
+            { header: "rate limit", cell: (t: LiveTier) => t.rpm },
+            { header: "node selection", cell: (t: LiveTier) => t.routing, className: "font-sans" },
+          ]}
+          rows={LIVE_TIERS}
+          rowKey={(t) => t.tier}
+        />
       </Section>
 
       <Section title="Membership, proposed">
@@ -308,24 +308,18 @@ export default function RoadmapPage() {
           access to features before they ship. It is a proposal: the tiers in force today are the
           four above, and none of the names or benefits below are in effect.
         </p>
-        <div className="overflow-x-auto">
-          <table className="w-full max-w-xl font-mono text-xs">
-            <thead>
-              <tr className="text-text-muted">
-                <th className="py-2 pr-6 text-left font-normal">proposed tier</th>
-                <th className="py-2 text-left font-normal">proposed benefit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {PROPOSED_TIERS.map((t) => (
-                <tr key={t.tier} className="border-t border-border text-text-secondary">
-                  <td className="py-2 pr-6 text-text-primary">{t.tier}</td>
-                  <td className="py-2 font-sans">{t.benefit}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DocsTable
+          columns={[
+            { header: "proposed tier", cell: (t: ProposedTier) => t.tier, emphasis: true },
+            {
+              header: "proposed benefit",
+              cell: (t: ProposedTier) => t.benefit,
+              className: "font-sans",
+            },
+          ]}
+          rows={PROPOSED_TIERS}
+          rowKey={(t) => t.tier}
+        />
         <p className="text-xs text-text-tertiary">
           Thresholds and discount percentages are not decided. Governance would set them.
         </p>

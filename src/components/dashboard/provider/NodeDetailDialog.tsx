@@ -4,6 +4,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { DocsTable } from "@/components/docs/DocsTable";
 import { NodeStatus, formatVram } from "./NodeStatus";
 import { EarningsChart } from "./EarningsChart";
 import { nodeLabel } from "./nodeLabel";
@@ -17,19 +18,6 @@ function Stat({ label, value }: { label: string; value: string }) {
       <div className="text-[11px] text-text-muted">{label}</div>
       <div className="font-mono text-sm text-text-primary">{value}</div>
     </div>
-  );
-}
-
-function JobRow({ job }: { job: ProviderJob }) {
-  const tokens = (job.prompt_tokens ?? 0) + (job.completion_tokens ?? 0);
-  return (
-    <tr className="border-t border-border text-text-secondary">
-      <td className="py-2 pr-4 text-text-primary">{job.model ?? "—"}</td>
-      <td className="py-2 pr-4">{tokens > 0 ? formatNumber(tokens) : "—"}</td>
-      <td className="py-2 pr-4 text-text-primary">{formatUsdcAmount(job.provider_earning_usdc)}</td>
-      <td className="py-2 pr-4">{job.status ?? "—"}</td>
-      <td className="py-2 text-right">{formatDateTime(job.created_at)}</td>
-    </tr>
   );
 }
 
@@ -124,23 +112,27 @@ export function NodeDetailDialog({
                 No jobs yet. Once this node is connected the orchestrator starts routing work to it.
               </p>
             ) : (
-              <div className="max-h-64 overflow-auto">
-                <table className="w-full font-mono text-xs">
-                  <thead className="sticky top-0 bg-bg-secondary">
-                    <tr className="text-text-muted">
-                      <th className="py-2 pr-4 text-left font-normal">model</th>
-                      <th className="py-2 pr-4 text-left font-normal">tokens</th>
-                      <th className="py-2 pr-4 text-left font-normal">earned</th>
-                      <th className="py-2 pr-4 text-left font-normal">status</th>
-                      <th className="py-2 text-right font-normal">when</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.recent_jobs.map((job) => (
-                      <JobRow key={job.id} job={job} />
-                    ))}
-                  </tbody>
-                </table>
+              <div className="max-h-64 overflow-y-auto">
+                <DocsTable
+                  columns={[
+                    { header: "model", cell: (j: ProviderJob) => j.model ?? "—", emphasis: true },
+                    {
+                      header: "tokens",
+                      cell: (j: ProviderJob) => {
+                        const t = (j.prompt_tokens ?? 0) + (j.completion_tokens ?? 0);
+                        return t > 0 ? formatNumber(t) : "—";
+                      },
+                    },
+                    {
+                      header: "earned",
+                      cell: (j: ProviderJob) => formatUsdcAmount(j.provider_earning_usdc),
+                    },
+                    { header: "status", cell: (j: ProviderJob) => j.status ?? "—" },
+                    { header: "when", cell: (j: ProviderJob) => formatDateTime(j.created_at) },
+                  ]}
+                  rows={data.recent_jobs}
+                  rowKey={(j) => j.id}
+                />
               </div>
             )}
           </div>

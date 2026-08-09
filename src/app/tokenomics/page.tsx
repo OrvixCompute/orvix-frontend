@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { PublicShell, PageIntro, Section } from "@/components/layout/PublicShell";
+import { DocsTable } from "@/components/docs/DocsTable";
 import { routes } from "@/lib/constants/routes";
 
 export const metadata: Metadata = {
@@ -10,7 +11,13 @@ export const metadata: Metadata = {
     "ORVX powers the Orvix network: staking for fee discounts and governance, funded by a revenue-driven buyback and burn.",
 };
 
-const SPLIT = [
+interface Split {
+  label: string;
+  share: string;
+  note: string;
+}
+
+const SPLIT: Split[] = [
   { label: "provider", share: "70%", note: "paid to the GPU operator who served the request" },
   { label: "buyback", share: "20%", note: "buys ORVX from the open market" },
   { label: "treasury", share: "10%", note: "funds development and network operations" },
@@ -47,19 +54,15 @@ export default function TokenomicsPage() {
 
       <Section title="Revenue split">
         <p>Every paid request divides its revenue three ways, on-chain and in real time:</p>
-        <div className="overflow-x-auto">
-          <table className="w-full max-w-lg font-mono text-xs">
-            <tbody>
-              {SPLIT.map((s) => (
-                <tr key={s.label} className="border-t border-border text-text-secondary">
-                  <td className="py-2 pr-6 text-text-primary">{s.label}</td>
-                  <td className="py-2 pr-6 text-text-primary">{s.share}</td>
-                  <td className="py-2">{s.note}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DocsTable
+          columns={[
+            { header: "share", cell: (s: Split) => s.share, emphasis: true },
+            { header: "to", cell: (s: Split) => s.label, emphasis: true },
+            { header: "what it does", cell: (s: Split) => s.note, className: "font-sans" },
+          ]}
+          rows={SPLIT}
+          rowKey={(s) => s.label}
+        />
       </Section>
 
       <Section title="Buyback and burn">

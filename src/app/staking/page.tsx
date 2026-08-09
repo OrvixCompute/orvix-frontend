@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { PublicShell, PageIntro, Section } from "@/components/layout/PublicShell";
+import { DocsTable } from "@/components/docs/DocsTable";
 import { dashboardRoutes, routes } from "@/lib/constants/routes";
 
 export const metadata: Metadata = {
@@ -10,7 +11,13 @@ export const metadata: Metadata = {
     "Stake ORVX to unlock fee discount tiers, raise provider priority, and gain governance voting power.",
 };
 
-const TIERS = [
+interface Tier {
+  tier: string;
+  stake: string;
+  discount: string;
+}
+
+const TIERS: Tier[] = [
   { tier: "bronze", stake: "0 ORVX", discount: "0%" },
   { tier: "silver", stake: "10,000 ORVX", discount: "5%" },
   { tier: "gold", stake: "50,000 ORVX", discount: "15%" },
@@ -27,26 +34,15 @@ export default function StakingPage() {
       />
 
       <Section title="Tiers">
-        <div className="overflow-x-auto">
-          <table className="w-full max-w-md font-mono text-xs">
-            <thead>
-              <tr className="text-text-muted">
-                <th className="py-2 pr-6 text-left font-normal">tier</th>
-                <th className="py-2 pr-6 text-left font-normal">stake</th>
-                <th className="py-2 text-left font-normal">discount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {TIERS.map((t) => (
-                <tr key={t.tier} className="border-t border-border text-text-secondary">
-                  <td className="py-2 pr-6 text-text-primary">{t.tier}</td>
-                  <td className="py-2 pr-6">{t.stake}</td>
-                  <td className="py-2">{t.discount}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DocsTable
+          columns={[
+            { header: "tier", cell: (t: Tier) => t.tier, emphasis: true },
+            { header: "stake", cell: (t: Tier) => t.stake },
+            { header: "discount", cell: (t: Tier) => t.discount },
+          ]}
+          rows={TIERS}
+          rowKey={(t) => t.tier}
+        />
       </Section>
 
       <Section title="How it works">

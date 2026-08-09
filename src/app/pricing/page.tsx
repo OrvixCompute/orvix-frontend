@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { PublicShell, PageIntro, Section } from "@/components/layout/PublicShell";
+import { DocsTable } from "@/components/docs/DocsTable";
 import { routes } from "@/lib/constants/routes";
 
 export const metadata: Metadata = {
@@ -10,10 +11,25 @@ export const metadata: Metadata = {
     "Per-token pricing in USDC on Solana. 1000 free chat requests and 50 images a day to start, then metered billing with no subscription and no minimum.",
 };
 
+interface Row {
+  model: string;
+  input: string;
+  output: string;
+  perM: string;
+  status: string;
+}
+
+interface Tier {
+  tier: string;
+  stake: string;
+  discount: string;
+  rpm: string;
+}
+
 // Mirrors the orchestrator's PRICING table. Shown per 1M tokens as well as per
 // 1K, because per-1M is the unit every other provider quotes — a reader
 // comparing us to them should not have to do the arithmetic.
-const ROWS = [
+const ROWS: Row[] = [
   {
     model: "qwen-2.5-7b",
     input: "$0.0001",
@@ -37,7 +53,12 @@ const ROWS = [
   },
 ];
 
-const TIERS = [
+const IMAGE_ROWS = [
+  { unit: "per megapixel", price: "0.05 USDC" },
+  { unit: "1024 × 1024 image", price: "\u2248 0.05 USDC" },
+];
+
+const TIERS: Tier[] = [
   { tier: "bronze", stake: "0 ORVX", discount: "0%", rpm: "60/min" },
   { tier: "silver", stake: "10,000 ORVX", discount: "5%", rpm: "120/min" },
   { tier: "gold", stake: "50,000 ORVX", discount: "15%", rpm: "300/min" },
@@ -54,30 +75,17 @@ export default function PricingPage() {
       />
 
       <Section title="Per-token pricing" wide>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[40rem] font-mono text-xs">
-            <thead>
-              <tr className="text-text-muted">
-                <th className="py-2 pr-6 text-left font-normal">model</th>
-                <th className="py-2 pr-6 text-left font-normal">input / 1K</th>
-                <th className="py-2 pr-6 text-left font-normal">output / 1K</th>
-                <th className="py-2 pr-6 text-left font-normal">per 1M (in / out)</th>
-                <th className="py-2 text-left font-normal">status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ROWS.map((row) => (
-                <tr key={row.model} className="border-t border-border text-text-secondary">
-                  <td className="py-2 pr-6 text-text-primary">{row.model}</td>
-                  <td className="py-2 pr-6">{row.input}</td>
-                  <td className="py-2 pr-6">{row.output}</td>
-                  <td className="py-2 pr-6 text-text-primary">{row.perM}</td>
-                  <td className="py-2">{row.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DocsTable
+          columns={[
+            { header: "model", cell: (r: Row) => r.model, emphasis: true },
+            { header: "input / 1K", cell: (r: Row) => r.input },
+            { header: "output / 1K", cell: (r: Row) => r.output },
+            { header: "per 1M (in / out)", cell: (r: Row) => r.perM },
+            { header: "status", cell: (r: Row) => r.status },
+          ]}
+          rows={ROWS}
+          rowKey={(r) => r.model}
+        />
         <p className="text-xs text-text-tertiary">
           Settled in USDC. &ldquo;In catalog&rdquo; means the model is priced and ready but no node
           is serving it right now —{" "}
@@ -93,26 +101,14 @@ export default function PricingPage() {
           Image generation is priced per megapixel and scales with area, so a 512 × 512 costs a
           quarter of a 1024 × 1024 and a 1536 × 1536 a little over twice as much.
         </p>
-        <div className="overflow-x-auto">
-          <table className="w-full max-w-md font-mono text-xs">
-            <thead>
-              <tr className="text-text-muted">
-                <th className="py-2 pr-6 text-left font-normal">unit</th>
-                <th className="py-2 text-left font-normal">price</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-t border-border text-text-secondary">
-                <td className="py-2 pr-6 text-text-primary">per megapixel</td>
-                <td className="py-2">0.05 USDC</td>
-              </tr>
-              <tr className="border-t border-border text-text-secondary">
-                <td className="py-2 pr-6 text-text-primary">1024 × 1024 image</td>
-                <td className="py-2">≈ 0.05 USDC</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <DocsTable
+          columns={[
+            { header: "unit", cell: (r: { unit: string; price: string }) => r.unit, emphasis: true },
+            { header: "price", cell: (r: { unit: string; price: string }) => r.price },
+          ]}
+          rows={IMAGE_ROWS}
+          rowKey={(r) => r.unit}
+        />
         <p className="text-xs text-text-tertiary">
           Charged only past your free daily allowance. Generated images are deleted after 24 hours.
         </p>
@@ -145,28 +141,16 @@ export default function PricingPage() {
           metered cost, and a higher per-minute ceiling. Your tier comes from staked ORVX, not from
           your wallet balance.
         </p>
-        <div className="overflow-x-auto">
-          <table className="w-full max-w-xl font-mono text-xs">
-            <thead>
-              <tr className="text-text-muted">
-                <th className="py-2 pr-6 text-left font-normal">tier</th>
-                <th className="py-2 pr-6 text-left font-normal">stake</th>
-                <th className="py-2 pr-6 text-left font-normal">discount</th>
-                <th className="py-2 text-left font-normal">rate limit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {TIERS.map((t) => (
-                <tr key={t.tier} className="border-t border-border text-text-secondary">
-                  <td className="py-2 pr-6 text-text-primary">{t.tier}</td>
-                  <td className="py-2 pr-6">{t.stake}</td>
-                  <td className="py-2 pr-6">{t.discount}</td>
-                  <td className="py-2">{t.rpm}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DocsTable
+          columns={[
+            { header: "tier", cell: (t: Tier) => t.tier, emphasis: true },
+            { header: "stake", cell: (t: Tier) => t.stake },
+            { header: "discount", cell: (t: Tier) => t.discount },
+            { header: "rate limit", cell: (t: Tier) => t.rpm },
+          ]}
+          rows={TIERS}
+          rowKey={(t) => t.tier}
+        />
         <div className="flex flex-wrap gap-x-6 gap-y-2 pt-2 text-sm">
           <Link
             href={routes.staking}

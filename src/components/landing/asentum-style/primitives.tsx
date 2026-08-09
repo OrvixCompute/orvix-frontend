@@ -3,7 +3,7 @@ import Image from "next/image";
 
 // Empty spacer with a hairline top, used between major sections.
 export function SectionDivider() {
-  return <section className="min-h-[70px] border-t border-[#1F1F1F] px-[4%]" />;
+  return <section className="min-h-10 border-t border-[#1F1F1F] px-[4%] md:min-h-[70px]" />;
 }
 
 // Dual-color display heading: gray lead-in + white emphasis (Asentum's headline

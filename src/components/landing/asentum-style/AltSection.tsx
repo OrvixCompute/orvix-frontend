@@ -31,9 +31,7 @@ export function AltSection({
       <h2 className="font-plus mt-4 text-[24px] font-bold leading-[1.2] tracking-tight text-white md:text-[32px]">
         {title}
       </h2>
-      <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-[#BABABA]">
-        {body}
-      </p>
+      <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-[#BABABA]">{body}</p>
       {cta && (
         <div className="mt-8">
           <CornerLink href={cta.href}>{cta.label}</CornerLink>
@@ -43,16 +41,15 @@ export function AltSection({
   );
 
   return (
-    <section className="px-[4%] py-20">
+    // Vertical rhythm scales with the viewport: 160px of combined padding
+    // between two stacked sections reads as breathing room beside a two-column
+    // layout and as a dead band on a phone.
+    <section className="px-[4%] py-12 md:py-20">
       {image ? (
         <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 md:grid-cols-2">
           {text}
           <div className={flip ? "md:order-1" : ""}>
-            <AssetImage
-              src={image.src}
-              alt={image.alt}
-              className="h-64 md:h-80"
-            />
+            <AssetImage src={image.src} alt={image.alt} className="h-64 md:h-80" />
           </div>
         </div>
       ) : (
