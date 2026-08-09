@@ -12,7 +12,7 @@ const FAQS: QA[] = [
   },
   {
     q: "How is this different from OpenAI?",
-    a: "There is no central provider. Requests are routed to independent GPU operators, metered on-chain, and billed in USDC — typically far cheaper than hosted incumbents.",
+    a: "There is no central provider. Requests are routed to independent GPU operators, metered on-chain, and billed in USDC — no subscription, no minimum, and every charge is auditable on Solana.",
   },
   {
     q: "How do I get started?",

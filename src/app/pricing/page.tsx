@@ -7,14 +7,34 @@ import { routes } from "@/lib/constants/routes";
 export const metadata: Metadata = {
   title: "Pricing — Orvix",
   description:
-    "Transparent, per-token pricing in USDC. Up to 17x cheaper than hosted incumbents, with no rate-limit games.",
+    "Per-token pricing in USDC on Solana. 1000 free chat requests and 50 images a day to start, then metered billing with no subscription and no minimum.",
 };
 
-// Per 1K tokens in USDC, mirroring the orchestrator's PRICING table.
+// Mirrors the orchestrator's PRICING table. Shown per 1M tokens as well as per
+// 1K, because per-1M is the unit every other provider quotes — a reader
+// comparing us to them should not have to do the arithmetic.
 const ROWS = [
-  { model: "qwen-2.5-7b", input: "$0.0001", output: "$0.0002", status: "live" },
-  { model: "mistral-7b", input: "$0.0001", output: "$0.0002", status: "in catalog" },
-  { model: "llama-3.1-8b-quantized", input: "$0.00008", output: "$0.00016", status: "in catalog" },
+  {
+    model: "qwen-2.5-7b",
+    input: "$0.0001",
+    output: "$0.0002",
+    perM: "$0.10 / $0.20",
+    status: "live",
+  },
+  {
+    model: "mistral-7b",
+    input: "$0.0001",
+    output: "$0.0002",
+    perM: "$0.10 / $0.20",
+    status: "in catalog",
+  },
+  {
+    model: "llama-3.1-8b-quantized",
+    input: "$0.00008",
+    output: "$0.00016",
+    perM: "$0.08 / $0.16",
+    status: "in catalog",
+  },
 ];
 
 const TIERS = [
@@ -30,17 +50,18 @@ export default function PricingPage() {
       <PageIntro
         eyebrow="pricing"
         title="Pay only for what you use"
-        lead="Every request is metered per token and billed in USDC on Solana. No subscriptions, no rate-limit games — typically up to 17x cheaper than hosted incumbents."
+        lead="Start on 1000 free chat requests and 50 images a day. After that every request is metered per token and billed in USDC on Solana — no subscription, no minimum, no monthly fee, and every charge auditable on-chain."
       />
 
-      <Section title="Per-token pricing">
+      <Section title="Per-token pricing" wide>
         <div className="overflow-x-auto">
-          <table className="w-full font-mono text-xs">
+          <table className="w-full min-w-[40rem] font-mono text-xs">
             <thead>
               <tr className="text-text-muted">
                 <th className="py-2 pr-6 text-left font-normal">model</th>
-                <th className="py-2 pr-6 text-left font-normal">input</th>
-                <th className="py-2 pr-6 text-left font-normal">output</th>
+                <th className="py-2 pr-6 text-left font-normal">input / 1K</th>
+                <th className="py-2 pr-6 text-left font-normal">output / 1K</th>
+                <th className="py-2 pr-6 text-left font-normal">per 1M (in / out)</th>
                 <th className="py-2 text-left font-normal">status</th>
               </tr>
             </thead>
@@ -50,6 +71,7 @@ export default function PricingPage() {
                   <td className="py-2 pr-6 text-text-primary">{row.model}</td>
                   <td className="py-2 pr-6">{row.input}</td>
                   <td className="py-2 pr-6">{row.output}</td>
+                  <td className="py-2 pr-6 text-text-primary">{row.perM}</td>
                   <td className="py-2">{row.status}</td>
                 </tr>
               ))}
@@ -57,8 +79,8 @@ export default function PricingPage() {
           </table>
         </div>
         <p className="text-xs text-text-tertiary">
-          Prices are per 1K tokens, settled in USDC. &ldquo;In catalog&rdquo; means the model is
-          priced and ready but no node is serving it right now —{" "}
+          Settled in USDC. &ldquo;In catalog&rdquo; means the model is priced and ready but no node
+          is serving it right now —{" "}
           <Link href={routes.docs} className="text-text-secondary hover:text-text-primary">
             GET /v1/models
           </Link>{" "}
