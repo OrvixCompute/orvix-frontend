@@ -44,14 +44,20 @@ export function WithdrawDialog({
   const [amount, setAmount] = useState("");
   const [destination, setDestination] = useState("");
   const [error, setError] = useState<ApiError | null>(null);
-  const [queued, setQueued] = useState<string | null>(null);
+  /**
+   * Whether the payout was accepted. Deliberately not the response's
+   * `estimated_completion`: that field is a fixed string the backend returns on
+   * every request, not a figure computed for this one, so rendering it as
+   * "settles in <value>" turns a constant into a per-payout promise.
+   */
+  const [queued, setQueued] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setAmount("");
     setDestination("");
     setError(null);
-    setQueued(null);
+    setQueued(false);
   }, [open]);
 
   const availableNum = parseNumeric(available) ?? 0;
@@ -74,8 +80,8 @@ export function WithdrawDialog({
       const body = destination.trim()
         ? { amount: parsed, destination_wallet: destination.trim() }
         : { amount: parsed };
-      const res = await withdraw(body).unwrap();
-      setQueued(res.estimated_completion);
+      await withdraw(body).unwrap();
+      setQueued(true);
     } catch (err) {
       const parsedError = reportApiError("provider/withdraw", err, "Could not queue the payout.");
       setError(parsedError);
@@ -88,8 +94,13 @@ export function WithdrawDialog({
       {queued ? (
         <div className="space-y-4">
           <p className="text-sm text-text-secondary">
-            Payout queued. It usually settles in <span className="text-text-primary">{queued}</span>
-            , and the transaction appears in your withdrawal history once it lands on Solana.
+            Payout queued. Withdrawals normally settle within the hour, though that is not
+            guaranteed.
+          </p>
+          <p className="text-sm text-text-secondary">
+            Watch your withdrawal history for the outcome either way: it shows the Solana
+            transaction once the payout lands, or — if it does not go through — the reason, with the
+            amount returned to your available balance.
           </p>
           <div className="flex justify-end">
             <Button variant="primary" onClick={onClose}>

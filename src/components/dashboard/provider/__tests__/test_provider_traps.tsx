@@ -6,6 +6,13 @@ import type { ProviderNode } from "@/lib/types/provider";
 
 const mockNodes: { current: ProviderNode[] } = { current: [] };
 
+// The backend returns a fixed estimated_completion on every payout.
+const withdrawResult = {
+  withdrawal_id: "w1",
+  status: "queued",
+  estimated_completion: "< 1 hour",
+};
+
 jest.mock("@/lib/store/hooks", () => ({
   useAppSelector: () => "wallet-1",
   useAppDispatch: () => jest.fn(),
@@ -16,7 +23,10 @@ jest.mock("@/lib/store/api/providerApi", () => ({
   useGetNodeQuery: () => ({ data: undefined, isLoading: false, isError: false }),
   useRenameNodeMutation: () => [jest.fn(), { isLoading: false }],
   useDeleteNodeMutation: () => [jest.fn(), { isLoading: false }],
-  useWithdrawMutation: () => [jest.fn(), { isLoading: false }],
+  useWithdrawMutation: () => [
+    () => ({ unwrap: () => Promise.resolve(withdrawResult) }),
+    { isLoading: false },
+  ],
 }));
 
 function node(overrides: Partial<ProviderNode> = {}): ProviderNode {
@@ -108,6 +118,19 @@ describe("withdraw guards the amount before the server does", () => {
     setup("10");
     await userEvent.type(screen.getByLabelText(/amount/i), "5");
     expect(submitButton()).toBeEnabled();
+  });
+
+  it("confirms without repeating the backend's fixed estimate as a promise", async () => {
+    // estimated_completion is the same string on every response, so rendering it
+    // as "settles in <value>" dresses a constant up as a per-payout guarantee.
+    setup("10");
+    await userEvent.type(screen.getByLabelText(/amount/i), "5");
+    await userEvent.click(submitButton());
+
+    expect(await screen.findByText(/payout queued/i)).toBeInTheDocument();
+    expect(screen.queryByText(/< 1 hour/)).not.toBeInTheDocument();
+    // The failure path is the one a provider actually needs signposted.
+    expect(screen.getByText(/returned to your available balance/i)).toBeInTheDocument();
   });
 
   it("offers only the withdrawable figure, never the spending balance", () => {
