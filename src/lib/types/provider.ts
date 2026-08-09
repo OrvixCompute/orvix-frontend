@@ -115,6 +115,12 @@ export interface WithdrawalRecord {
   status: string;
   queued_at: string | null;
   processed_at: string | null;
-  tx_signature: string | null;
+  solana_signature: string | null;
+  /**
+   * Why a `failed` withdrawal failed. A payout that dies before broadcast — an
+   * empty payout wallet, say — is refunded in full and marked failed, so the
+   * balance is intact and this line is the only explanation the provider gets.
+   */
+  error_message: string | null;
   metadata: { asset?: string; manual_approval_required?: boolean } | null;
 }

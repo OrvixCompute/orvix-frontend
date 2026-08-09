@@ -61,10 +61,23 @@ export function WithdrawalsTable() {
         </thead>
         <tbody>
           {withdrawals.map((w) => (
-            <tr key={w.id} className="border-t border-border text-text-secondary">
+            <tr key={w.id} className="border-t border-border align-top text-text-secondary">
               <td className="px-4 py-2 text-text-primary">{formatUsdcAmount(w.amount)}</td>
               <td className="px-4 py-2">
-                {w.destination_wallet ? truncateAddress(w.destination_wallet) : "—"}
+                {w.solana_signature ? (
+                  <a
+                    href={`https://solscan.io/tx/${w.solana_signature}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-text-secondary underline-offset-2 hover:text-text-primary hover:underline"
+                  >
+                    {w.destination_wallet ? truncateAddress(w.destination_wallet) : "view tx"}
+                  </a>
+                ) : w.destination_wallet ? (
+                  truncateAddress(w.destination_wallet)
+                ) : (
+                  "—"
+                )}
               </td>
               <td className="px-4 py-2">
                 <Badge className={cn(STATUS_CLASS[w.status] ?? "text-text-muted")}>
@@ -72,6 +85,15 @@ export function WithdrawalsTable() {
                 </Badge>
                 {w.metadata?.manual_approval_required && (
                   <span className="ml-2 text-[10px] text-text-tertiary">manual review</span>
+                )}
+                {/* A refunded failure leaves the balance intact, so the reason is
+                    the only thing that explains what happened. */}
+                {w.status === "failed" && (
+                  <p className="mt-1 max-w-[22rem] whitespace-normal font-sans text-[11px] text-text-tertiary">
+                    {w.error_message
+                      ? `${w.error_message} — the amount was returned to your available balance.`
+                      : "The amount was returned to your available balance."}
+                  </p>
                 )}
               </td>
               <td className="px-4 py-2 text-right">{formatDateTime(w.queued_at)}</td>
