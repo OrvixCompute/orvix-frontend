@@ -92,17 +92,16 @@ describe("withdraw guards the amount before the server does", () => {
 
   const submitButton = () => screen.getByRole("button", { name: /^withdraw$/i });
 
+  /** The automatic path: the worker's interval, no human involved. */
+  const AUTO_QUEUED = {
+    withdrawal_id: "w1",
+    status: "queued",
+    estimated_completion: "picked up by the payout worker within ~5 min, then confirmed on-chain",
+    requires_manual_approval: false,
+  };
+
   beforeEach(() => {
-    http = stubHttp({
-      "POST /v1/provider/withdraw": {
-        body: {
-          withdrawal_id: "w1",
-          status: "queued",
-          // The backend returns this same fixed string on every payout.
-          estimated_completion: "< 1 hour",
-        },
-      },
-    });
+    http = stubHttp({ "POST /v1/provider/withdraw": { body: AUTO_QUEUED } });
   });
 
   it("blocks an empty amount", () => {
@@ -143,14 +142,36 @@ describe("withdraw guards the amount before the server does", () => {
     expect(request.body).toEqual({ amount: 5 });
   });
 
-  it("confirms without repeating the backend's fixed estimate as a promise", async () => {
+  it("shows the server's account of what happens next", async () => {
     open("10");
     await userEvent.type(screen.getByLabelText(/amount/i), "5");
     await userEvent.click(submitButton());
 
     expect(await screen.findByText(/payout queued/i)).toBeInTheDocument();
-    // The response really does carry "< 1 hour"; it must not be rendered.
-    expect(screen.queryByText(/< 1 hour/)).not.toBeInTheDocument();
+    expect(screen.getByText(AUTO_QUEUED.estimated_completion)).toBeInTheDocument();
+  });
+
+  it("flags a withdrawal that no automatic payout will pick up", async () => {
+    // Above AUTO_APPROVE_MAX_USDC there is no approval endpoint, so it waits on
+    // a person — it must not read like a payout already on its way.
+    http.restore();
+    http = stubHttp({
+      "POST /v1/provider/withdraw": {
+        body: {
+          withdrawal_id: "w2",
+          status: "queued",
+          estimated_completion: "awaiting manual review — no automatic payout will be attempted",
+          requires_manual_approval: true,
+        },
+      },
+    });
+    open("20000");
+
+    await userEvent.type(screen.getByLabelText(/amount/i), "15000");
+    await userEvent.click(submitButton());
+
+    expect(await screen.findByText(/awaiting manual review/i)).toBeInTheDocument();
+    expect(screen.queryByText(/payout worker/i)).not.toBeInTheDocument();
   });
 
   it("offers only the withdrawable figure, never the spending balance", () => {

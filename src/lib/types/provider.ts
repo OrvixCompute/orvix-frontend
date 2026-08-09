@@ -104,7 +104,19 @@ export interface WithdrawRequest {
 export interface WithdrawResponse {
   withdrawal_id: string;
   status: string;
+  /**
+   * What actually happens next, derived per request — the payout worker's own
+   * interval on the automatic path, or a statement that no automatic payout
+   * will be attempted on the manual one. Safe to render; it is no longer the
+   * fixed "< 1 hour" string it used to be.
+   */
   estimated_completion: string;
+  /**
+   * True above AUTO_APPROVE_MAX_USDC. There is no approval endpoint, so such a
+   * withdrawal waits on an operator — it must not be shown as if a payout were
+   * already on its way.
+   */
+  requires_manual_approval: boolean;
 }
 
 /** A row from GET /v1/provider/withdrawals. The amount column is `amount`. */

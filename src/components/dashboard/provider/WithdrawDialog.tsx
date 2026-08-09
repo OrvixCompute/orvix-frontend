@@ -7,6 +7,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useWithdrawMutation } from "@/lib/store/api/providerApi";
+import type { WithdrawResponse } from "@/lib/types/provider";
 import { reportApiError, type ApiError } from "@/lib/utils/apiError";
 import { formatUsdcAmount, parseNumeric } from "@/lib/utils/format";
 import { useAppSelector } from "@/lib/store/hooks";
@@ -45,19 +46,19 @@ export function WithdrawDialog({
   const [destination, setDestination] = useState("");
   const [error, setError] = useState<ApiError | null>(null);
   /**
-   * Whether the payout was accepted. Deliberately not the response's
-   * `estimated_completion`: that field is a fixed string the backend returns on
-   * every request, not a figure computed for this one, so rendering it as
-   * "settles in <value>" turns a constant into a per-payout promise.
+   * The accepted payout. `estimated_completion` used to be a fixed string on
+   * every response and was dropped for that reason; it is now derived per
+   * request from the payout worker's interval, and says outright when no
+   * automatic payout will be attempted — so it is worth rendering again.
    */
-  const [queued, setQueued] = useState(false);
+  const [queued, setQueued] = useState<WithdrawResponse | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setAmount("");
     setDestination("");
     setError(null);
-    setQueued(false);
+    setQueued(null);
   }, [open]);
 
   const availableNum = parseNumeric(available) ?? 0;
@@ -80,8 +81,7 @@ export function WithdrawDialog({
       const body = destination.trim()
         ? { amount: parsed, destination_wallet: destination.trim() }
         : { amount: parsed };
-      await withdraw(body).unwrap();
-      setQueued(true);
+      setQueued(await withdraw(body).unwrap());
     } catch (err) {
       const parsedError = reportApiError("provider/withdraw", err, "Could not queue the payout.");
       setError(parsedError);
@@ -93,10 +93,20 @@ export function WithdrawDialog({
     <Modal open={open} onClose={onClose} title="Withdraw earnings" className="max-w-lg">
       {queued ? (
         <div className="space-y-4">
-          {/* Just the fact. The outcome — settled with its signature, or failed
-              with its reason and the balance returned — is in the history table,
-              which is where someone checks later anyway. */}
+          {/* The fact, plus the server's own account of what happens next. The
+              outcome itself — settled with its signature, or failed with its
+              reason and the balance returned — is in the history table. */}
           <p className="text-sm text-text-secondary">Payout queued.</p>
+          {queued.requires_manual_approval ? (
+            // No approval endpoint exists, so this one waits on a person. It
+            // must not look like a payout that is already on its way.
+            <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/5 p-3">
+              <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warning" />
+              <p className="text-xs text-text-secondary">{queued.estimated_completion}</p>
+            </div>
+          ) : (
+            <p className="text-xs text-text-tertiary">{queued.estimated_completion}</p>
+          )}
           <div className="flex justify-end">
             <Button variant="primary" onClick={onClose}>
               Done
