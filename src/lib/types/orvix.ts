@@ -9,6 +9,15 @@ export interface User {
   wallet: string;
   tier: string;
   balance_usdc: string;
+  /**
+   * Whether this account has registered as a provider.
+   *
+   * Read it from the `getMe` query rather than the persisted `auth.user`: the
+   * session blob in localStorage is written at login and predates this field,
+   * so a provider who logged in before it shipped carries a copy without it —
+   * which reads as false and would tell a real provider they are not one.
+   */
+  is_provider: boolean;
 }
 
 /** GET /v1/auth/challenge?wallet= */

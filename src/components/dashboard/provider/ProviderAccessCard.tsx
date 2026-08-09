@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { CodeBlock } from "@/components/ui/CodeBlock";
 import { Modal } from "@/components/ui/Modal";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { NodeSecretDialog } from "./NodeSecretDialog";
 import {
   useRegisterProviderMutation,
@@ -25,12 +26,18 @@ const DISPLAY_NAME_MAX = 80;
  * Registration, secret rotation, and the three commands that take a machine
  * from nothing to serving jobs.
  *
- * `registered` is a hint, not a fact: /v1/auth/me does not expose is_provider,
- * so the page infers it from whether the account has nodes, earnings, or
- * withdrawals. It only decides which button leads — every action below works
- * either way, so a wrong guess costs wording, not function.
+ * `registered` is `is_provider` from GET /v1/auth/me. While it is still loading
+ * the action is withheld rather than defaulted: guessing "not a provider" would
+ * offer an existing provider a Become-a-provider button that silently rotates
+ * their live secret, dropping a running node.
  */
-export function ProviderAccessCard({ registered }: { registered: boolean }) {
+export function ProviderAccessCard({
+  registered,
+  statusLoading = false,
+}: {
+  registered: boolean;
+  statusLoading?: boolean;
+}) {
   const [registerProvider, { isLoading: registering }] = useRegisterProviderMutation();
   const [regenerateSecret, { isLoading: regenerating }] = useRegenerateSecretMutation();
 
@@ -82,7 +89,11 @@ export function ProviderAccessCard({ registered }: { registered: boolean }) {
             <div className="flex items-center gap-2">
               <Server size={16} className="text-text-tertiary" />
               <h2 className="text-sm font-medium text-text-primary">
-                {registered ? "Node credentials" : "Become a provider"}
+                {statusLoading
+                  ? "Provider access"
+                  : registered
+                    ? "Node credentials"
+                    : "Become a provider"}
               </h2>
             </div>
             <p className="mt-1 text-sm text-text-secondary">
@@ -92,7 +103,9 @@ export function ProviderAccessCard({ registered }: { registered: boolean }) {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {registered ? (
+            {statusLoading ? (
+              <Skeleton className="h-9 w-40" />
+            ) : registered ? (
               <Button onClick={() => setRotateOpen(true)} disabled={regenerating}>
                 <RefreshCw size={14} className={regenerating ? "animate-spin" : undefined} />
                 New secret

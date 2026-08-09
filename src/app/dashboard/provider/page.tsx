@@ -1,44 +1,33 @@
 "use client";
 
-import { useMemo } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProviderAccessCard } from "@/components/dashboard/provider/ProviderAccessCard";
 import { NodesPanel } from "@/components/dashboard/provider/NodesPanel";
 import { EarningsPanel } from "@/components/dashboard/provider/EarningsPanel";
-import { useGetEarningsQuery, useListNodesQuery } from "@/lib/store/api/providerApi";
-import { parseNumeric } from "@/lib/utils/format";
+import { useGetMeQuery } from "@/lib/store/api/authApi";
 import { routes } from "@/lib/constants/routes";
 
 /**
  * Provider dashboard — credentials, machines, and getting paid.
  *
- * On knowing whether the account is a provider: it cannot be read directly.
- * `is_provider` lives on the user row but /v1/auth/me does not return it, and
- * the only endpoint gated on it is POST /withdraw, which has side effects and
- * so cannot be probed. The flag below is therefore inferred from evidence —
- * nodes, earnings — and used only to choose wording and which button leads.
- * Every action on the page works regardless, and the one place the answer
- * really matters (withdraw) gets it authoritatively from the server as a
- * 403 not_a_provider, which routes the user back to the register card.
+ * Provider status comes from `is_provider` on GET /v1/auth/me. It is read from
+ * the query rather than the persisted `auth.user`, because that session blob is
+ * written at login: anyone who signed in before the field shipped has a stored
+ * copy without it, and a missing flag reads as false — telling an actual
+ * provider they are not one.
+ *
+ * Registering invalidates the User tag, so the flag flips as soon as the
+ * mutation lands without a re-login.
  */
 export default function ProviderPage() {
-  const { data: nodes } = useListNodesQuery();
-  const { data: earnings } = useGetEarningsQuery();
+  const { data: me, isLoading: statusLoading } = useGetMeQuery();
+  const registered = me?.is_provider ?? false;
 
-  const registered = useMemo(() => {
-    if (nodes && nodes.length > 0) return true;
-    const totals = [
-      earnings?.total_lifetime_usdc,
-      earnings?.available_to_withdraw,
-      earnings?.pending_withdrawal,
-    ];
-    return totals.some((value) => (parseNumeric(value) ?? 0) > 0);
-  }, [nodes, earnings]);
-
-  // The withdraw dialog calls this when the server says otherwise, so the
-  // register card is where the user lands rather than a dead end.
+  // The withdraw dialog calls this if the server disagrees — 403 not_a_provider
+  // stays the authoritative answer, and lands the user on the register card
+  // rather than at a dead end.
   const focusAccessCard = () => {
     document.getElementById("provider-access")?.scrollIntoView({ behavior: "smooth" });
   };
@@ -59,7 +48,7 @@ export default function ProviderPage() {
       />
 
       <div id="provider-access" className="scroll-mt-24">
-        <ProviderAccessCard registered={registered} />
+        <ProviderAccessCard registered={registered} statusLoading={statusLoading} />
       </div>
 
       <NodesPanel registered={registered} />
