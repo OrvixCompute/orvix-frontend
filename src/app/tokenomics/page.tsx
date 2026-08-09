@@ -64,9 +64,18 @@ export default function TokenomicsPage() {
 
       <Section title="Buyback and burn">
         <p>
-          The buyback budget purchases ORVX from the open market. Acquired tokens are periodically
-          burned, permanently reducing supply. Both buybacks and burns settle on Solana and are
-          publicly verifiable — the network&apos;s economics are auditable, not asserted.
+          The buyback budget is set aside from revenue today. Spending it purchases ORVX from the
+          open market, and acquired tokens are periodically burned, permanently reducing supply.
+          Both settle on Solana and carry a verifiable signature — the network&apos;s economics are
+          designed to be auditable rather than asserted.
+        </p>
+        <p className="text-sm text-text-tertiary">
+          The buyback and burn engine is merged and runs in stub mode: no ORVX is bought or burned
+          on-chain yet, because the mint has not launched. See the{" "}
+          <Link href={routes.roadmap} className="text-text-secondary hover:text-text-primary">
+            roadmap
+          </Link>{" "}
+          for what is live today.
         </p>
         <div className="flex flex-wrap gap-x-6 gap-y-2 pt-2 text-sm">
           <Link

@@ -28,23 +28,23 @@ const PHASES: Phase[] = [
       },
       {
         title: "OpenAI-compatible API",
-        note: "/v1/chat/completions working.",
+        note: "/v1/chat/completions and /v1/images/generations serving traffic.",
         status: "SHIPPED",
       },
       {
         title: "Image generation",
-        note: "FLUX schnell + orvix-image-1 serving jobs.",
+        note: "flux-schnell + orvix-image-1 running on live nodes.",
         status: "SHIPPED",
       },
       {
-        title: "Staking + tier system",
-        note: "Bronze / Silver / Gold / Diamond.",
+        title: "Tier system",
+        note: "Bronze to Diamond: fee discount, rate limit, node priority.",
         status: "SHIPPED",
       },
       {
-        title: "Buyback + burn",
-        note: "Engine merged, flags off.",
-        status: "SHIPPED",
+        title: "ORVX staking + buyback",
+        note: "Engine merged and running in stub mode. Goes live with the ORVX mint.",
+        status: "IN PROGRESS",
       },
     ],
   },
@@ -58,9 +58,9 @@ const PHASES: Phase[] = [
         status: "SHIPPED",
       },
       {
-        title: "Provider onboarding CLI",
-        note: "One command to join the network.",
-        status: "PLANNED",
+        title: "Provider node client",
+        note: "orvix-node published on PyPI — install, join, start.",
+        status: "SHIPPED",
       },
       {
         title: "Multi-provider routing",
@@ -68,9 +68,9 @@ const PHASES: Phase[] = [
         status: "SHIPPED",
       },
       {
-        title: "Real payout flow activation",
-        note: "USDC settlement merged, stub mode until activation.",
-        status: "IN PROGRESS",
+        title: "USDC settlement",
+        note: "Top-ups credited automatically; provider withdrawals paid on-chain.",
+        status: "SHIPPED",
       },
     ],
   },
@@ -84,16 +84,12 @@ function PhaseColumn({ phase, withSep }: { phase: Phase; withSep: boolean }) {
         {phase.items.map((item) => (
           <li key={item.title} className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-4">
-              <span className="text-[15px] font-medium text-white">
-                {item.title}
-              </span>
+              <span className="text-[15px] font-medium text-white">{item.title}</span>
               <Badge tone={STATUS_TONE[item.status]} className="shrink-0">
                 {item.status}
               </Badge>
             </div>
-            <span className="text-[13px] leading-relaxed text-[#7D7D7D]">
-              {item.note}
-            </span>
+            <span className="text-[13px] leading-relaxed text-[#7D7D7D]">{item.note}</span>
           </li>
         ))}
       </ul>
@@ -106,11 +102,7 @@ export function Roadmap() {
     <section className="px-[4%] py-12">
       <div className="mx-auto grid max-w-7xl grid-cols-1 md:grid-cols-2">
         {PHASES.map((phase, i) => (
-          <PhaseColumn
-            key={phase.badge}
-            phase={phase}
-            withSep={i < PHASES.length - 1}
-          />
+          <PhaseColumn key={phase.badge} phase={phase} withSep={i < PHASES.length - 1} />
         ))}
       </div>
     </section>

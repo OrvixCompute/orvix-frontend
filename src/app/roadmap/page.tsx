@@ -55,8 +55,9 @@ const UTILITIES: Utility[] = [
     status: "partly-live",
     now: (
       <>
-        Gold and diamond stakers already get priority node selection — their requests are routed to
-        the least-loaded GPU first, ahead of the general queue.
+        The orchestrator already routes gold and diamond requests to the least-loaded GPU first,
+        ahead of the general queue. The rule is enforced on every request; reaching those tiers
+        needs staked ORVX.
       </>
     ),
     next: (
@@ -82,8 +83,8 @@ const UTILITIES: Utility[] = [
     status: "partly-live",
     now: (
       <>
-        Staking already discounts every request: 5% at silver, 15% at gold, 25% at diamond. The
-        discount applies to the metered cost automatically — see{" "}
+        The discount is applied automatically to the metered cost of every request — 5% at silver,
+        15% at gold, 25% at diamond — derived from staked ORVX rather than a stored flag. See{" "}
         <Link href={routes.staking} className="text-text-primary hover:text-accent-hover">
           staking
         </Link>{" "}
@@ -119,17 +120,13 @@ const UTILITIES: Utility[] = [
   },
   {
     title: "Node staking",
-    status: "partly-live",
-    now: (
-      <>
-        Staking itself is live end to end — stake, unstake, and a tier derived from the staked
-        amount, all settled on Solana and visible in the dashboard.
-      </>
-    ),
+    status: "coming-soon",
     next: (
       <>
-        A share of network revenue distributed to stakers. Today staking pays off through discounts,
-        routing priority, and governance weight, not through a reward stream.
+        The stake, unstake, and tier machinery is built and the dashboard is wired to it, but the
+        ORVX mint is not configured yet — so a stake deposit cannot be credited and nobody is staked
+        today. It starts working the moment the mint launches. A share of network revenue paid to
+        stakers is a further step beyond that, and is not built.
       </>
     ),
   },
@@ -146,12 +143,18 @@ const UTILITIES: Utility[] = [
   },
   {
     title: "Revenue buyback",
-    status: "live",
+    status: "coming-soon",
     now: (
       <>
-        20% of every paid request funds market buybacks of ORVX, and acquired tokens are burned.
-        Both settle on Solana and every event carries its signature, so the flow is auditable rather
-        than asserted — the more compute the network sells, the larger the buyback.
+        The revenue split is real: 20% of every paid request is already set aside as buyback budget,
+        alongside 70% to the provider and 10% to the treasury.
+      </>
+    ),
+    next: (
+      <>
+        Spending that budget. The buyback and burn engine is merged and exercised, but runs in stub
+        mode — no ORVX is bought or burned on-chain yet, because the mint does not exist. Once it
+        launches, every buyback and burn settles on Solana with a verifiable signature.
       </>
     ),
   },
@@ -263,6 +266,11 @@ export default function RoadmapPage() {
         <p className="max-w-2xl">
           Four tiers, derived from staked ORVX rather than wallet balance. These are the numbers the
           orchestrator actually applies to every request.
+        </p>
+        <p className="max-w-2xl">
+          One caveat worth stating plainly: the ORVX mint is not configured yet, so a stake deposit
+          cannot be credited and every account currently sits at bronze. The ladder is built and
+          enforced — it becomes reachable when the token launches.
         </p>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[34rem] font-mono text-xs">
