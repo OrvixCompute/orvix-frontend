@@ -11,6 +11,8 @@ export const routes = {
   about: "/about",
   buy: "/buy",
   whitepaper: "/whitepaper",
+  tokenomics: "/tokenomics",
+  roadmap: "/roadmap",
 } as const;
 
 /** Authenticated dashboard routes (wrapped by the dashboard layout + AuthGuard). */

@@ -34,6 +34,15 @@ export default function TokenomicsPage() {
           <span className="text-text-primary">Governance</span> — staked ORVX is voting power over
           network parameters, supported models, and treasury spend.
         </p>
+        <p className="pt-1 text-sm">
+          <Link
+            href={routes.roadmap}
+            className="inline-flex items-center gap-1.5 text-text-primary transition-colors hover:text-accent-hover"
+          >
+            The full utility roadmap <ArrowRight size={14} />
+          </Link>{" "}
+          <span className="text-text-tertiary">— what is live today, and what is planned.</span>
+        </p>
       </Section>
 
       <Section title="Revenue split">

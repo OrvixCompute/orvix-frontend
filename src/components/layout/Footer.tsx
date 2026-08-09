@@ -4,6 +4,7 @@ const mainLinks = [
   { label: "FAQ", href: "/faq" },
   { label: "Changelog", href: "/changelog" },
   { label: "Tokenomics", href: "/tokenomics" },
+  { label: "Roadmap", href: "/roadmap" },
   { label: "Treasury", href: "/treasury" },
   { label: "Whitepaper", href: "/whitepaper" },
   { label: "Status", href: "/status" },

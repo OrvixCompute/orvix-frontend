@@ -14,6 +14,7 @@ const TIERS = [
   { tier: "bronze", stake: "0 ORVX", discount: "0%" },
   { tier: "silver", stake: "10,000 ORVX", discount: "5%" },
   { tier: "gold", stake: "50,000 ORVX", discount: "15%" },
+  { tier: "diamond", stake: "250,000 ORVX", discount: "25%" },
 ];
 
 export default function StakingPage() {
@@ -57,6 +58,15 @@ export default function StakingPage() {
         <p>
           Staked ORVX also counts as governance voting power — one staked ORVX is one vote on
           Snapshot.
+        </p>
+        <p className="pt-1 text-sm">
+          <Link
+            href={routes.roadmap}
+            className="inline-flex items-center gap-1.5 text-text-primary transition-colors hover:text-accent-hover"
+          >
+            What else staking will unlock <ArrowRight size={14} />
+          </Link>{" "}
+          <span className="text-text-tertiary">— marked live or coming soon, item by item.</span>
         </p>
       </Section>
 
