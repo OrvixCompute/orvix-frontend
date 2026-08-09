@@ -129,8 +129,6 @@ describe("withdraw guards the amount before the server does", () => {
 
     expect(await screen.findByText(/payout queued/i)).toBeInTheDocument();
     expect(screen.queryByText(/< 1 hour/)).not.toBeInTheDocument();
-    // The failure path is the one a provider actually needs signposted.
-    expect(screen.getByText(/returned to your available balance/i)).toBeInTheDocument();
   });
 
   it("offers only the withdrawable figure, never the spending balance", () => {

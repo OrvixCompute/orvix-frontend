@@ -93,15 +93,10 @@ export function WithdrawDialog({
     <Modal open={open} onClose={onClose} title="Withdraw earnings" className="max-w-lg">
       {queued ? (
         <div className="space-y-4">
-          <p className="text-sm text-text-secondary">
-            Payout queued. Withdrawals normally settle within the hour, though that is not
-            guaranteed.
-          </p>
-          <p className="text-sm text-text-secondary">
-            Watch your withdrawal history for the outcome either way: it shows the Solana
-            transaction once the payout lands, or — if it does not go through — the reason, with the
-            amount returned to your available balance.
-          </p>
+          {/* Just the fact. The outcome — settled with its signature, or failed
+              with its reason and the balance returned — is in the history table,
+              which is where someone checks later anyway. */}
+          <p className="text-sm text-text-secondary">Payout queued.</p>
           <div className="flex justify-end">
             <Button variant="primary" onClick={onClose}>
               Done
