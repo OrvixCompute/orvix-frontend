@@ -49,6 +49,11 @@ export function Modal({
         aria-modal="true"
         className={cn(
           "relative w-full max-w-md rounded-lg border border-border bg-bg-secondary p-5 shadow-xl",
+          // Opening a modal locks body scroll, so a panel taller than the
+          // viewport put its lower half out of reach — no page scroll, and
+          // nothing to scroll inside either. Most visible on a phone, where the
+          // node detail runs well past the screen.
+          "max-h-[calc(100vh-2rem)] overflow-y-auto",
           className,
         )}
       >
