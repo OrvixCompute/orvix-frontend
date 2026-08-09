@@ -21,6 +21,7 @@ export const dashboardRoutes = {
   apiKeys: "/dashboard/api-keys",
   billing: "/dashboard/billing",
   playground: "/dashboard/playground",
+  provider: "/dashboard/provider",
   staking: "/dashboard/staking",
   governance: "/dashboard/governance",
   settings: "/dashboard/settings",

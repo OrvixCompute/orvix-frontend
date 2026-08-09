@@ -25,6 +25,8 @@ export const api = createApi({
     "TopupIntents",
     "Jobs",
     "Nodes",
+    "ProviderEarnings",
+    "Withdrawals",
     "Staking",
     "Governance",
     "Quota",

@@ -24,6 +24,27 @@ export function formatDateTime(iso: string | null | undefined): string {
   }).format(d);
 }
 
+/**
+ * Format a USDC amount that may sit far below cent scale.
+ *
+ * Provider earnings are currently in the millionths ("0.000206"), so the usual
+ * two-decimal money format renders real income as 0.00. This keeps up to six
+ * decimals, trims the trailing zeros they leave behind, and never shows a
+ * non-zero amount as zero.
+ */
+export function formatUsdcAmount(value: string | number | null | undefined): string {
+  const num = parseNumeric(value);
+  if (num === null) return "—";
+  if (num === 0) return "0.00";
+  const fixed = num.toFixed(6);
+  // USDC columns are numeric(20,6), so this should not arise — but if a smaller
+  // amount ever reaches us, rounding it to 0.00 would make a non-zero balance
+  // indistinguishable from an empty one.
+  if (Number(fixed) === 0) return num > 0 ? "<0.000001" : ">-0.000001";
+  // Trim trailing zeros but keep cents, so 5 reads as "5.00" not "5.".
+  return fixed.replace(/(\.\d{2}\d*?)0+$/, "$1");
+}
+
 /** Parse a numeric that the API sends as a string (Postgres numeric). */
 export function parseNumeric(value: string | number | null | undefined): number | null {
   if (value === null || value === undefined) return null;
