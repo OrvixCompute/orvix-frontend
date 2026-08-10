@@ -1,6 +1,7 @@
 import { Header } from "@/components/layout/Header";
 import { Hero } from "@/components/landing/asentum-style/Hero";
 import { FeatureGrid } from "@/components/landing/asentum-style/FeatureGrid";
+import { Modalities } from "@/components/landing/asentum-style/Modalities";
 import { AltSection } from "@/components/landing/asentum-style/AltSection";
 import { Roadmap } from "@/components/landing/asentum-style/Roadmap";
 import { StatsRow } from "@/components/landing/asentum-style/StatsRow";
@@ -40,6 +41,9 @@ export default function LandingPage() {
 
         <SectionDivider />
         <FeatureGrid />
+
+        <SectionDivider />
+        <Modalities />
 
         <SectionDivider />
         <AltSection

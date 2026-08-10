@@ -83,6 +83,31 @@ export function coerceImageSize(modelId: string, size: string): string {
   return options.includes(size) ? size : options[options.length - 1];
 }
 
+/**
+ * Video generation, which the network cannot serve.
+ *
+ * The generation engine exists — `orvix-video-1`, LTX-Video through Diffusers,
+ * shipped in the orvix-node package, off by default and opt-in per provider.
+ * Nothing else does: the orchestrator has no catalog entry, no endpoint, no
+ * pricing unit and no clip storage, and no provider is running the engine.
+ *
+ * So this is deliberately NOT a {@link ModelOption}, and deliberately absent
+ * from {@link MODELS} and {@link IMAGE_MODELS}. Those arrays feed pickers that
+ * build real requests; an entry here reaching one of them would produce a call
+ * that cannot be served. It exists only to describe the feature on-screen.
+ */
+export const VIDEO_PREVIEW = {
+  id: "orvix-video-1",
+  label: "Video",
+  status: "Coming soon",
+  summary: "Text prompt in, a short clip out.",
+  /** The honest one-liner. No date, no price, no queue — none of those exist. */
+  state:
+    "The engine that generates the video is written and ships in the node package. The network to serve it is not connected yet: no catalog entry, no endpoint, no pricing.",
+  hardware:
+    "It also needs dedicated hardware — a clip takes minutes, and the machine serves nothing else while it renders.",
+} as const;
+
 /** Prompt length bounds and image-count bounds for the image playground. */
 export const IMAGE_PROMPT_LIMITS = { min: 3, max: 1000 } as const;
 export const IMAGE_COUNT = { min: 1, max: 4, default: 1 } as const;
