@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { PublicShell, PageIntro, Section } from "@/components/layout/PublicShell";
 import { DocsTable, Mono } from "@/components/docs/DocsTable";
 import { cn } from "@/lib/utils/cn";
+import { VIDEO_PREVIEW } from "@/lib/constants/models";
 import { routes } from "@/lib/constants/routes";
 
 export const metadata: Metadata = {
@@ -72,9 +73,9 @@ const UTILITIES: Utility[] = [
     status: "coming-soon",
     next: (
       <>
-        A recurring allowance earned by staking, spendable across chat, image generation, and the
-        products below — so a stake converts into usage rather than sitting idle. Nothing is issued
-        today, and the issuance rate has not been set.
+        A recurring allowance earned by staking, spendable across chat, image generation, video once
+        the network serves it, and the products below — so a stake converts into usage rather than
+        sitting idle. Nothing is issued today, and the issuance rate has not been set.
       </>
     ),
   },
@@ -206,6 +207,30 @@ const LIVE_TIERS: LiveTier[] = [
   },
 ];
 
+interface Capability {
+  name: string;
+  status: Status;
+  body: string;
+}
+
+const CAPABILITIES: Capability[] = [
+  {
+    name: "Chat",
+    status: "live",
+    body: "OpenAI-compatible completions, streaming and tool calls included, served by connected GPU nodes.",
+  },
+  {
+    name: "Image",
+    status: "live",
+    body: "DALL\u00b7E-compatible generation, priced per megapixel and deleted 24 hours after creation.",
+  },
+  {
+    name: "Video",
+    status: "coming-soon",
+    body: `${VIDEO_PREVIEW.summary} ${VIDEO_PREVIEW.state} It also needs dedicated hardware, since a clip takes minutes during which the machine serves nothing else.`,
+  },
+];
+
 const PROPOSED_TIERS: ProposedTier[] = [
   { tier: "silver", benefit: "Fee discount" },
   { tier: "gold", benefit: "Larger discount, priority queue" },
@@ -323,6 +348,28 @@ export default function RoadmapPage() {
         <p className="text-xs text-text-tertiary">
           Thresholds and discount percentages are not decided. Governance would set them.
         </p>
+      </Section>
+
+      {/* Not an ORVX utility, and kept out of the list above for that reason:
+          these are open to anyone paying in USDC. Listed because the page would
+          otherwise be silent on video while the playground and landing page
+          both name it. */}
+      <Section title="What the network runs">
+        <p>
+          Separate from the token: these are the workloads the network serves, available to anyone
+          with a USDC balance. Staking discounts them; it does not gate them.
+        </p>
+        <ul className="space-y-4">
+          {CAPABILITIES.map((c) => (
+            <li key={c.name} className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-text-primary">{c.name}</p>
+                <StatusBadge status={c.status} />
+              </div>
+              <p>{c.body}</p>
+            </li>
+          ))}
+        </ul>
       </Section>
 
       <Section title="Next steps">
