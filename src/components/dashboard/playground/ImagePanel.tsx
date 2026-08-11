@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AlertTriangle, Download, ImageIcon, Loader2, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
+import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils/cn";
 import { useAppSelector } from "@/lib/store/hooks";
 import { usePlaygroundKey } from "@/lib/inference/usePlaygroundKey";
@@ -331,6 +332,9 @@ export function ImagePanel() {
 
       {/* ── Result display ─────────────────────────────────────── */}
       <div className="min-h-[320px] rounded-lg border border-border bg-bg-secondary p-4">
+        <div className="mb-3 text-[11px] font-medium uppercase tracking-wide text-text-muted">
+          Result
+        </div>
         {generating ? (
           <div className="flex h-full min-h-[288px] flex-col items-center justify-center gap-3 text-center">
             <Loader2 size={22} className="animate-spin text-accent" />
@@ -347,6 +351,7 @@ export function ImagePanel() {
           <div className="flex h-full min-h-[288px] flex-col items-center justify-center gap-2 text-center">
             <ImageIcon size={22} className="text-text-muted" />
             <p className="text-sm text-text-tertiary">Your generated image will appear here</p>
+            <p className="text-xs text-text-muted">Describe what you want to see on the left, then hit Generate.</p>
           </div>
         )}
       </div>
@@ -388,6 +393,15 @@ function ErrorView({
 function ResultView({ result }: { result: Success }) {
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge className="border-border-strong text-text-secondary">
+          {result.images.length} {result.images.length === 1 ? "image" : "images"}
+        </Badge>
+        <Badge className="border-border-strong text-text-secondary">
+          {formatImageSize(result.size)}
+        </Badge>
+      </div>
+
       <div className={cn("grid gap-3", result.images.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
         {result.images.map((img, i) => (
           <figure key={img.url + i} className="space-y-2">

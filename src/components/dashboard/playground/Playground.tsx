@@ -51,7 +51,10 @@ export function Playground({ subtitle }: { subtitle?: string }) {
         title="Playground"
         subtitle={subtitle ?? "Test inference against the network."}
         actions={
-          <div className="inline-flex rounded-md border border-border bg-bg-secondary p-0.5">
+          <div
+            aria-label="Playground mode"
+            className="inline-flex rounded-md border border-border bg-bg-secondary p-0.5"
+          >
             {TABS.map((tab) => {
               const active = mode === tab.id;
               const Icon = tab.icon;
@@ -59,10 +62,11 @@ export function Playground({ subtitle }: { subtitle?: string }) {
                 <button
                   key={tab.id}
                   type="button"
+                  aria-pressed={active}
                   onClick={() => selectMode(tab.id)}
-                  aria-current={active ? "page" : undefined}
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-strong",
                     active
                       ? "bg-bg-tertiary text-text-primary"
                       : "text-text-secondary hover:text-text-primary",

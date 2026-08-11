@@ -1,15 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Code2, CornerDownLeft, Square, Trash2, AlertTriangle } from "lucide-react";
+import {
+  Code2,
+  CornerDownLeft,
+  Square,
+  Trash2,
+  AlertTriangle,
+  MessageSquare,
+  Wallet,
+  Play,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
+import { cn } from "@/lib/utils/cn";
 import { SettingsPanel, type PlaygroundSettings } from "@/components/dashboard/playground/SettingsPanel";
 import { CodeViewDialog } from "@/components/dashboard/playground/CodeViewDialog";
 import { useAppSelector } from "@/lib/store/hooks";
 import { usePlaygroundKey } from "@/lib/inference/usePlaygroundKey";
 import { runChatCompletion, ChatError, type ChatUsage } from "@/lib/inference/chat";
-import { DEFAULT_MODEL, GENERATION_LIMITS } from "@/lib/constants/models";
+import { DEFAULT_MODEL, GENERATION_LIMITS, MODELS } from "@/lib/constants/models";
 import type { ChatMessage } from "@/lib/types/orvix";
 
 function MessageRow({
@@ -21,12 +31,29 @@ function MessageRow({
   content: string;
   pending?: boolean;
 }) {
+  const isUser = role === "user";
   return (
-    <div className="space-y-1">
-      <div className="font-mono text-xs text-text-muted">{role}</div>
-      <div className="whitespace-pre-wrap text-sm leading-relaxed text-text-primary">
-        {content}
-        {pending && <span className="ml-0.5 inline-block animate-cursor-blink">▍</span>}
+    <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
+      <div
+        className={cn(
+          "max-w-[85%] space-y-1",
+          isUser ? "items-end" : "items-start",
+        )}
+      >
+        <div className={cn("font-mono text-xs", isUser ? "text-right text-accent" : "text-text-muted")}>
+          {isUser ? "you" : "assistant"}
+        </div>
+        <div
+          className={cn(
+            "whitespace-pre-wrap rounded-lg border px-3 py-2 text-sm leading-relaxed",
+            isUser
+              ? "border-border-strong bg-bg-tertiary text-text-primary"
+              : "border-border bg-bg-secondary text-text-primary",
+          )}
+        >
+          {content}
+          {pending && <span className="ml-0.5 inline-block animate-cursor-blink">▍</span>}
+        </div>
       </div>
     </div>
   );
@@ -210,9 +237,15 @@ export function ChatPanel() {
           >
             {isEmpty ? (
               <div className="flex h-full flex-col items-center justify-center text-center">
+                <MessageSquare size={22} className="mb-3 text-text-muted" />
                 <p className="text-sm text-text-tertiary">
                   Send a message to run it through the network.
                 </p>
+                <div className="mt-4 flex flex-col items-center gap-1.5 text-xs text-text-muted">
+                  <span>1. Connect your wallet</span>
+                  <span>2. Type a message below</span>
+                  <span>3. Get a response in real time</span>
+                </div>
               </div>
             ) : (
               <div className="space-y-5">
@@ -241,16 +274,23 @@ export function ChatPanel() {
           <div className="space-y-2">
             <Textarea
               rows={3}
-              placeholder="Send a message…  (Enter to send, Shift+Enter for newline)"
+              placeholder="Ask anything…"
               value={input}
               disabled={streaming}
               onKeyDown={onKeyDown}
               onChange={(e) => setInput(e.target.value)}
             />
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-text-tertiary">
-                {token ? "Charged to your USDC balance" : "Connect your wallet to run inference"}
-              </span>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-col gap-0.5 text-xs text-text-tertiary">
+                <span className="inline-flex items-center gap-1.5">
+                  <Wallet size={12} className="text-text-muted" />
+                  {token ? "Charged to your USDC balance" : "Connect your wallet to run inference"}
+                </span>
+                <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-text-muted">
+                  <Play size={10} /> {MODELS.find((m) => m.id === settings.model)?.label ?? settings.model}
+                  {settings.stream ? " · streaming" : ""}
+                </span>
+              </div>
               {streaming ? (
                 <Button variant="secondary" onClick={stop}>
                   <Square size={13} /> Stop
@@ -261,6 +301,9 @@ export function ChatPanel() {
                 </Button>
               )}
             </div>
+            <p className="text-right text-[11px] text-text-tertiary">
+              Enter to send · Shift+Enter for a new line
+            </p>
           </div>
         </div>
 
