@@ -29,6 +29,14 @@ const selectClass = cn(
   "disabled:cursor-not-allowed disabled:opacity-50",
 );
 
+/** One-click starters for the prompt box. Static — no request behind them. */
+const PROMPT_IDEAS = [
+  "A photorealistic red panda coding on a laptop, soft studio light",
+  "An astronaut floating above a neon cyberpunk city at night",
+  "A tiny robot watering flowers in a sunlit greenhouse",
+  "Isometric view of a futuristic data center, clean and minimal",
+];
+
 interface Success {
   images: ImageDatum[];
   prompt: string;
@@ -221,6 +229,29 @@ export function ImagePanel() {
           </div>
         </div>
 
+        {prompt.trim() === "" && (
+          <div className="space-y-2">
+            <div className="text-[11px] text-text-muted">Try one of these</div>
+            <div className="flex flex-wrap gap-1.5">
+              {PROMPT_IDEAS.map((idea) => (
+                <button
+                  key={idea}
+                  type="button"
+                  disabled={generating}
+                  onClick={() => setPrompt(idea)}
+                  className={cn(
+                    "max-w-[220px] truncate rounded-full border border-border bg-bg-secondary px-3 py-1",
+                    "text-xs text-text-secondary hover:border-border-strong hover:text-text-primary",
+                    "disabled:cursor-not-allowed disabled:opacity-50",
+                  )}
+                >
+                  {idea}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {history.length > 0 && (
           <div className="space-y-2 border-t border-dashed border-border pt-4">
             <div className="text-[11px] text-text-muted">Recent prompts</div>
@@ -324,9 +355,14 @@ export function ImagePanel() {
               </>
             )}
           </Button>
-          <p className="text-center text-xs text-text-tertiary">
-            {!token ? "Connect your wallet to generate images" : quota ? quotaLabel(quota) : " "}
-          </p>
+          {token && quota && (
+            <QuotaBar quota={quota} />
+          )}
+          {!token && (
+            <p className="text-center text-xs text-text-tertiary">
+              Connect your wallet to generate images
+            </p>
+          )}
         </div>
       </div>
 
@@ -339,7 +375,7 @@ export function ImagePanel() {
           <div className="flex h-full min-h-[288px] flex-col items-center justify-center gap-3 text-center">
             <Loader2 size={22} className="animate-spin text-accent" />
             <p className="text-sm text-text-secondary">
-              Generating…{" "}
+              Generating your image…{" "}
               <span className="text-text-tertiary">(may take 15–30s if switching models)</span>
             </p>
           </div>
@@ -348,10 +384,16 @@ export function ImagePanel() {
         ) : result ? (
           <ResultView result={result} />
         ) : (
-          <div className="flex h-full min-h-[288px] flex-col items-center justify-center gap-2 text-center">
-            <ImageIcon size={22} className="text-text-muted" />
-            <p className="text-sm text-text-tertiary">Your generated image will appear here</p>
-            <p className="text-xs text-text-muted">Describe what you want to see on the left, then hit Generate.</p>
+          <div className="flex h-full min-h-[288px] flex-col items-center justify-center gap-3 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-dashed border-border-strong bg-bg-tertiary">
+              <ImageIcon size={22} className="text-text-muted" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-text-tertiary">Your generated image will appear here</p>
+              <p className="text-xs text-text-muted">
+                Describe what you want, then hit Generate.
+              </p>
+            </div>
           </div>
         )}
       </div>
@@ -440,6 +482,24 @@ function Meta({ label, value }: { label: string; value: string }) {
     <div className="flex gap-3">
       <dt className="w-24 shrink-0 text-text-muted">{label}</dt>
       <dd className="min-w-0 flex-1 break-words text-text-secondary">{value}</dd>
+    </div>
+  );
+}
+
+/** Visual daily-quota indicator under the Generate button. */
+function QuotaBar({ quota }: { quota: QuotaResponse }) {
+  const limit = quota.image.daily_limit;
+  const used = Math.min(quota.image.used_today, limit);
+  const pct = limit > 0 ? Math.round((used / limit) * 100) : 0;
+  return (
+    <div className="space-y-1">
+      <div className="h-1 w-full overflow-hidden rounded-full bg-bg-tertiary">
+        <div
+          className={cn("h-full rounded-full", pct >= 100 ? "bg-danger" : "bg-accent")}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className="text-center text-[11px] text-text-muted">{quotaLabel(quota)}</p>
     </div>
   );
 }

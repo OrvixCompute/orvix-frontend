@@ -34,5 +34,8 @@ next-env.d.ts
 .commandcode/
 .claude/
 
+# local screenshots / scratch
+/screenshots/
+
 # internal planning docs (not committed)
 /reference/
