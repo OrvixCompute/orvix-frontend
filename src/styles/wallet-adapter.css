@@ -1,0 +1,5 @@
+/* Vendor wallet-adapter styles, imported through a local CSS file so the
+   `@import url(...)` inside the package's styles.css is resolved by the CSS
+   pipeline instead of tripping the webpack parser. Overrides for the Orvix
+   dark theme live in globals.css (.wallet-adapter-* rules). */
+@import "@solana/wallet-adapter-react-ui/styles.css";

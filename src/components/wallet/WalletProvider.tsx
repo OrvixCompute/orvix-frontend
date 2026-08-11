@@ -17,8 +17,9 @@ import {
 import { config } from "@/lib/constants/config";
 
 // Default wallet-adapter modal styles. Overridden to match the dark theme
-// in globals.css (.wallet-adapter-* rules).
-import "@solana/wallet-adapter-react-ui/styles.css";
+// in globals.css (.wallet-adapter-* rules). Imported via a local CSS wrapper
+// so the package's leading @import url(...) parses correctly.
+import "@/styles/wallet-adapter.css";
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const endpoint = config.solanaRpc;
