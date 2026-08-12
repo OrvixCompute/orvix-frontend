@@ -108,6 +108,42 @@ export const VIDEO_PREVIEW = {
     "It also needs dedicated hardware — a clip takes minutes, and the machine serves nothing else while it renders.",
 } as const;
 
+/** Video model catalog entry shape, mirroring what GET /v1/models returns for
+ *  a video-capable model once the network serves video. */
+export interface VideoModelOption {
+  id: string;
+  label: string;
+  available: boolean;
+  /** Smallest/largest clip the model will render, in seconds. */
+  durationSeconds: [number, number];
+}
+
+/**
+ * Video models. Unlike chat/image this array is NOT gated by an `available`
+ * flag that a picker consumes directly: `orvix-video-1` is absent from the live
+ * catalog (the network cannot serve video yet), so VideoPanel decides from the
+ * live `GET /v1/models` response whether to show an active form or the honest
+ * waiting state. This list exists so the moment the backend advertises the
+ * model, the panel has its label and duration bounds without a redeploy.
+ */
+export const VIDEO_MODELS: VideoModelOption[] = [
+  {
+    id: "orvix-video-1",
+    label: "Orvix Video 1",
+    available: true,
+    durationSeconds: [5, 10],
+  },
+];
+
+export const DEFAULT_VIDEO_MODEL = "orvix-video-1";
+
+/** Prompt length bounds and clip-length bounds for the video playground. */
+export const VIDEO_PROMPT_LIMITS = { min: 3, max: 1000 } as const;
+export const VIDEO_DURATION = { min: 5, max: 10, default: 5 } as const;
+
+/** How often the video panel polls a running job's status, in milliseconds. */
+export const VIDEO_POLL_INTERVAL_MS = 5_000;
+
 /** Prompt length bounds and image-count bounds for the image playground. */
 export const IMAGE_PROMPT_LIMITS = { min: 3, max: 1000 } as const;
 export const IMAGE_COUNT = { min: 1, max: 4, default: 1 } as const;

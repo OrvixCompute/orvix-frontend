@@ -10,12 +10,12 @@ import { VideoPanel } from "@/components/dashboard/playground/VideoPanel";
 
 type Mode = "chat" | "image" | "video";
 
-const TABS: { id: Mode; label: string; icon: typeof MessageSquare; soon?: boolean }[] = [
+const TABS: { id: Mode; label: string; icon: typeof MessageSquare }[] = [
   { id: "chat", label: "Chat", icon: MessageSquare },
   { id: "image", label: "Image", icon: ImageIcon },
-  // Selectable so it can explain itself, but marked so nobody mistakes it for a
-  // working mode. What it opens is an explanation, not a tool that fails.
-  { id: "video", label: "Video", icon: Clapperboard, soon: true },
+  // The tab itself is always selectable: VideoPanel checks the live catalog on
+  // mount and shows either the working form or an honest "not here yet" state.
+  { id: "video", label: "Video", icon: Clapperboard },
 ];
 
 const MODES: Mode[] = ["chat", "image", "video"];
@@ -73,11 +73,6 @@ export function Playground({ subtitle }: { subtitle?: string }) {
                   )}
                 >
                   <Icon size={14} /> {tab.label}
-                  {tab.soon && (
-                    <span className="rounded bg-bg-primary px-1 font-mono text-[10px] leading-4 text-text-muted">
-                      soon
-                    </span>
-                  )}
                 </button>
               );
             })}

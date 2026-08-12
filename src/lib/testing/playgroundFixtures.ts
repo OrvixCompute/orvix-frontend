@@ -30,6 +30,24 @@ export function quota(overrides: Partial<QuotaResponse> = {}): QuotaResponse {
   } as QuotaResponse;
 }
 
+/** GET /v1/models, defaulted to the live catalog: chat + image, no video. */
+export function modelsCatalog(overrides: { withVideo?: boolean; videoAvailable?: boolean } = {}) {
+  const { withVideo = false, videoAvailable = true } = overrides;
+  const data = [
+    { id: "qwen-2.5-7b", object: "model", owned_by: "orvix", available: true },
+    { id: "orvix-image-1", object: "model", owned_by: "orvix", available: true },
+  ];
+  if (withVideo) {
+    data.push({
+      id: "orvix-video-1",
+      object: "model",
+      owned_by: "orvix",
+      available: videoAvailable,
+    });
+  }
+  return { body: { object: "list", data } };
+}
+
 /** POST /v1/images/generations success, with the quota headers the API sends. */
 export function imageSuccess(url = "https://orvix.network/images/abc.png") {
   return {
@@ -41,9 +59,10 @@ export function imageSuccess(url = "https://orvix.network/images/abc.png") {
   };
 }
 
-/** The routes an ImagePanel test needs before it declares anything specific. */
+/** The routes a playground test needs before it declares anything specific. */
 export function playgroundRoutes(extra: Routes = {}): Routes {
   return {
+    "GET /v1/models": modelsCatalog(),
     "GET /v1/account/quota": { body: quota() },
     ...extra,
   };
