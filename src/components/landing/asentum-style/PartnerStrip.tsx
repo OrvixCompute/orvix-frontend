@@ -5,6 +5,7 @@ import Image from "next/image";
 // which fits the dark Asentum aesthetic without tinting).
 const PARTNERS = [
   { src: "/oobe-protocol.jpg", alt: "OOBE Protocol", href: "https://www.oobeprotocol.ai/" },
+  { src: "/supabase-logo.jpg", alt: "Supabase", href: "https://supabase.com/" },
 ];
 
 export function PartnerStrip() {
