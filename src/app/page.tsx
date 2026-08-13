@@ -8,6 +8,7 @@ import { StatsRow } from "@/components/landing/asentum-style/StatsRow";
 import { ComparisonTable } from "@/components/landing/asentum-style/ComparisonTable";
 import { CenteredCta } from "@/components/landing/asentum-style/CenteredCta";
 import { AsentumFooter } from "@/components/landing/asentum-style/AsentumFooter";
+import { PartnerStrip } from "@/components/landing/asentum-style/PartnerStrip";
 import { SectionDivider } from "@/components/landing/asentum-style/primitives";
 import { routes } from "@/lib/constants/routes";
 
@@ -38,6 +39,8 @@ export default function LandingPage() {
 
       <main>
         <Hero />
+
+        <PartnerStrip />
 
         <SectionDivider />
         <FeatureGrid />
