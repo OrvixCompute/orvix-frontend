@@ -1,23 +1,24 @@
 import { config } from "@/lib/constants/config";
 import { DEFAULT_VIDEO_MODEL } from "@/lib/constants/models";
 
+/** What the playground sends for one clip. `durationSeconds` is client-side
+ *  only: the backend derives clip length from num_frames + fps. */
 export interface VideoParams {
   model: string;
   prompt: string;
   durationSeconds: number;
 }
 
-/** Job lifecycle states the video endpoint reports. */
-export type VideoJobStatus = "queued" | "processing" | "completed" | "failed";
-
-export interface VideoJob {
-  id: string;
-  status: VideoJobStatus;
-  /** Present once `status` is "completed". Expires, like generated images. */
-  video_url?: string | null;
-  /** 0–100 when the backend reports one; null means indeterminate. */
-  progress?: number | null;
-  error?: string | null;
+/** The synchronous response from POST /v1/videos/generations. */
+export interface VideoResult {
+  /** Public URL of the finished clip. */
+  url: string;
+  /** Wall-clock the render took, measured client-side (ms). */
+  elapsedMs: number;
+  /** From the X-Orvix-Quota-Remaining response header, when present. */
+  quotaRemaining: number | null;
+  /** From the X-Orvix-Quota-Reset response header, when present. */
+  quotaReset: string | null;
 }
 
 /**
@@ -32,10 +33,6 @@ export interface VideoAvailability {
   available: boolean;
   /** True when the model is listed but no node serves it yet (no GPU). */
   waitingForGpu: boolean;
-}
-
-export function isTerminalVideoStatus(status: VideoJobStatus): boolean {
-  return status === "completed" || status === "failed";
 }
 
 /**
@@ -68,37 +65,11 @@ async function readError(res: Response): Promise<string> {
   return message;
 }
 
-/** Fetch with a client-side timeout that surfaces as a VideoError. */
-async function fetchWithTimeout(
-  url: string,
-  init: RequestInit,
-  timeoutMs: number,
-  timeoutMessage: string,
-): Promise<Response> {
-  const controller = new AbortController();
-  let timedOut = false;
-  const timer = setTimeout(() => {
-    timedOut = true;
-    controller.abort();
-  }, timeoutMs);
-  try {
-    return await fetch(url, { ...init, signal: controller.signal });
-  } catch (e) {
-    if (timedOut) throw new VideoError(timeoutMessage, 0, { timeout: true });
-    throw new VideoError("Network error — check your connection and try again.", 0);
-  } finally {
-    clearTimeout(timer);
-  }
+function numOrNull(v: string | null): number | null {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }
-
-function authHeaders(apiKey: string | null): Record<string, string> {
-  return {
-    "Content-Type": "application/json",
-    ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
-  };
-}
-
-const SHORT_TIMEOUT_MS = 30_000;
 
 /**
  * Ask the catalog whether the network serves video.
@@ -109,12 +80,7 @@ const SHORT_TIMEOUT_MS = 30_000;
  * means the engine exists on some node but no GPU is free to render.
  */
 export async function getVideoAvailability(): Promise<VideoAvailability> {
-  const res = await fetchWithTimeout(
-    `${config.apiUrl}/v1/models`,
-    { method: "GET" },
-    SHORT_TIMEOUT_MS,
-    "Checking video availability timed out. Try again.",
-  );
+  const res = await fetch(`${config.apiUrl}/v1/models`, { method: "GET" });
   if (!res.ok) throw new VideoError(await readError(res), res.status);
 
   const body = await res.json();
@@ -132,68 +98,74 @@ export async function getVideoAvailability(): Promise<VideoAvailability> {
 }
 
 /**
- * Start a video generation job via POST /v1/videos/generations.
+ * Render a clip via POST /v1/videos/generations.
  *
- * Video rendering is slow (a clip takes minutes), so the endpoint is expected
- * to accept the job and return its id immediately; the caller then polls with
- * {@link getVideoJob}. Authenticates with an Orvix API key (orvx_sk_…), same as
- * chat and image.
+ * The endpoint is synchronous, mirroring the image path: it holds the request
+ * open while the node renders (a short clip takes tens of seconds), then
+ * returns an OpenAI-shaped `{ created, data: [{ url }] }`. Authenticates with
+ * an Orvix API key (orvx_sk_…), same as chat and image.
  *
- * NOTE: this endpoint does not exist yet — the network serves no video. It is
- * wired so the moment the backend ships it (and lists `orvix-video-1` in the
- * catalog), this panel starts working without further changes.
+ * The backend derives clip length from num_frames + fps — there is no
+ * `duration_seconds` field. VideoPanel maps the user's duration choice to
+ * frame counts before calling this.
  */
-export async function submitVideoJob(
+const VIDEO_TIMEOUT_MS = 180_000;
+
+export async function generateVideo(
   params: VideoParams,
   opts: { apiKey: string | null },
-): Promise<{ jobId: string }> {
-  const res = await fetchWithTimeout(
-    `${config.apiUrl}/v1/videos/generations`,
-    {
+): Promise<VideoResult> {
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, VIDEO_TIMEOUT_MS);
+
+  const started = Date.now();
+  let res: Response;
+  try {
+    res = await fetch(`${config.apiUrl}/v1/videos/generations`, {
       method: "POST",
-      headers: authHeaders(opts.apiKey),
+      headers: {
+        "Content-Type": "application/json",
+        ...(opts.apiKey ? { Authorization: `Bearer ${opts.apiKey}` } : {}),
+      },
       body: JSON.stringify({
         model: params.model,
         prompt: params.prompt,
-        duration_seconds: params.durationSeconds,
+        // 5s → 97 frames, 10s → 193 frames (the backend max is 257). fps 24.
+        num_frames: params.durationSeconds === 10 ? 193 : 97,
+        fps: 24,
         response_format: "url",
       }),
-    },
-    SHORT_TIMEOUT_MS,
-    "Submitting the video job timed out. Try again.",
-  );
-  if (!res.ok) throw new VideoError(await readError(res), res.status);
-
-  const body = await res.json();
-  const jobId = body?.id ?? body?.job_id ?? body?.data?.[0]?.id;
-  if (typeof jobId !== "string" || !jobId) {
-    throw new VideoError("The video endpoint did not return a job id.", 0);
+      signal: controller.signal,
+    });
+  } catch (e) {
+    if (timedOut) {
+      throw new VideoError(
+        "Video generation timed out (3 min max). Try a shorter clip or a simpler prompt.",
+        0,
+        { timeout: true },
+      );
+    }
+    throw new VideoError("Network error — check your connection and try again.", 0);
+  } finally {
+    clearTimeout(timer);
   }
-  return { jobId };
-}
 
-/** Fetch one job's status via GET /v1/videos/{id}. */
-export async function getVideoJob(
-  jobId: string,
-  opts: { apiKey: string | null },
-): Promise<VideoJob> {
-  const res = await fetchWithTimeout(
-    `${config.apiUrl}/v1/videos/${encodeURIComponent(jobId)}`,
-    {
-      method: "GET",
-      headers: authHeaders(opts.apiKey),
-    },
-    SHORT_TIMEOUT_MS,
-    "Checking the video job timed out. Try again.",
-  );
   if (!res.ok) throw new VideoError(await readError(res), res.status);
 
+  const elapsedMs = Date.now() - started;
   const body = await res.json();
+  const url = body?.data?.[0]?.url ?? body?.url;
+  if (typeof url !== "string" || !url) {
+    throw new VideoError("The video endpoint did not return a clip URL.", 0);
+  }
   return {
-    id: body?.id ?? jobId,
-    status: body?.status ?? "processing",
-    video_url: body?.video_url ?? body?.url ?? null,
-    progress: typeof body?.progress === "number" ? body.progress : null,
-    error: body?.error ?? null,
+    url,
+    elapsedMs,
+    quotaRemaining: numOrNull(res.headers.get("X-Orvix-Quota-Remaining")),
+    quotaReset: res.headers.get("X-Orvix-Quota-Reset"),
   };
 }

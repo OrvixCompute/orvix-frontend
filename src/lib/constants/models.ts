@@ -84,22 +84,16 @@ export function coerceImageSize(modelId: string, size: string): string {
 }
 
 /**
- * Video generation, which the network cannot serve.
+ * Video generation, served by the network.
  *
- * The generation engine exists — `orvix-video-1`, LTX-Video through Diffusers,
- * shipped in the orvix-node package, off by default and opt-in per provider.
- * Nothing else does: the orchestrator has no catalog entry, no endpoint, no
- * pricing unit and no clip storage, and no provider is running the engine.
- *
- * So this is deliberately NOT a {@link ModelOption}, and deliberately absent
- * from {@link MODELS} and {@link IMAGE_MODELS}. Those arrays feed pickers that
- * build real requests; an entry here reaching one of them would produce a call
- * that cannot be served. It exists only to describe the feature on-screen.
+ * `orvix-video-1` (LTX-Video through Diffusers) is in the orchestrator catalog
+ * and a video-capable node is live, so the playground submits real clips via
+ * POST /v1/videos/generations and the response is a finished clip URL.
  */
 export const VIDEO_PREVIEW = {
   id: "orvix-video-1",
   label: "Video",
-  status: "Coming soon",
+  status: "Live",
   summary: "Text prompt in, a short clip out.",
   /** The honest one-liner. No date, no price, no queue — none of those exist. */
   state:
@@ -108,8 +102,7 @@ export const VIDEO_PREVIEW = {
     "It also needs dedicated hardware — a clip takes minutes, and the machine serves nothing else while it renders.",
 } as const;
 
-/** Video model catalog entry shape, mirroring what GET /v1/models returns for
- *  a video-capable model once the network serves video. */
+/** Video model catalog entry shape, mirroring what GET /v1/models returns. */
 export interface VideoModelOption {
   id: string;
   label: string;
@@ -119,12 +112,9 @@ export interface VideoModelOption {
 }
 
 /**
- * Video models. Unlike chat/image this array is NOT gated by an `available`
- * flag that a picker consumes directly: `orvix-video-1` is absent from the live
- * catalog (the network cannot serve video yet), so VideoPanel decides from the
- * live `GET /v1/models` response whether to show an active form or the honest
- * waiting state. This list exists so the moment the backend advertises the
- * model, the panel has its label and duration bounds without a redeploy.
+ * Video models. `orvix-video-1` is live in the catalog and served by a node;
+ * VideoPanel reads the live `GET /v1/models` `available` flag to decide between
+ * the working form and the waiting-for-GPU state.
  */
 export const VIDEO_MODELS: VideoModelOption[] = [
   {

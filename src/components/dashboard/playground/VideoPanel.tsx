@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -17,19 +17,16 @@ import { cn } from "@/lib/utils/cn";
 import { useAppSelector } from "@/lib/store/hooks";
 import { usePlaygroundKey } from "@/lib/inference/usePlaygroundKey";
 import {
+  generateVideo,
   getVideoAvailability,
-  getVideoJob,
-  isTerminalVideoStatus,
-  submitVideoJob,
   VideoError,
   type VideoAvailability,
-  type VideoJob,
+  type VideoResult,
 } from "@/lib/inference/video";
 import {
   DEFAULT_VIDEO_MODEL,
   VIDEO_DURATION,
   VIDEO_MODELS,
-  VIDEO_POLL_INTERVAL_MS,
   VIDEO_PREVIEW,
   VIDEO_PROMPT_LIMITS,
 } from "@/lib/constants/models";
@@ -56,11 +53,10 @@ interface VideoFailure {
   timeout: boolean;
 }
 
-interface VideoResult {
-  job: VideoJob;
+interface VideoResultState {
+  result: VideoResult;
   prompt: string;
   duration: number;
-  elapsedMs: number;
 }
 
 async function download(url: string) {
@@ -125,12 +121,12 @@ function describeError(err: VideoFailure): {
 /**
  * The video tab.
  *
- * There is no live endpoint to call — the network serves no video yet, and
- * `orvix-video-1` is not in `GET /v1/models`. Rather than a static advert, this
- * panel checks the live catalog on mount: the moment the backend lists a video
- * model with `available: true`, the full form (prompt, duration, submit, job
- * polling, progress, player) activates on its own. Until then it says so
- * honestly, with no inert box that invites typing into nothing.
+ * The network serves video: `orvix-video-1` is in the live catalog and a
+ * video-capable node is up, so this panel submits real clips. Generation is
+ * synchronous — POST /v1/videos/generations holds the request open while the
+ * node renders (a short clip takes tens of seconds), then returns the clip
+ * URL. The panel checks the catalog on mount for the honest waiting states and
+ * shows an indeterminate progress bar while a clip renders.
  */
 export function VideoPanel() {
   const token = useAppSelector((s) => s.auth.token);
@@ -145,29 +141,9 @@ export function VideoPanel() {
   const [duration, setDuration] = useState<number>(VIDEO_DURATION.default);
   const [history, setHistory] = useState<string[]>([]);
 
-  // A running job and its latest known progress.
-  const [job, setJob] = useState<VideoJob | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [result, setResult] = useState<VideoResult | null>(null);
+  const [result, setResult] = useState<VideoResultState | null>(null);
   const [failure, setFailure] = useState<VideoFailure | null>(null);
-
-  const pollRef = useRef<number | null>(null);
-  // Values the poll loop needs but must not re-create it over: the prompt and
-  // duration of the job currently rendering.
-  const jobMetaRef = useRef<{ prompt: string; duration: number; startedAt: number } | null>(null);
-
-  const stopPolling = () => {
-    if (pollRef.current !== null) {
-      window.clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      stopPolling();
-    };
-  }, []);
 
   // Ask the catalog once on mount. This is the single gate between the honest
   // "not here yet" view and the working form.
@@ -198,31 +174,30 @@ export function VideoPanel() {
 
   const trimmed = prompt.trim();
   const tooShort = trimmed.length < VIDEO_PROMPT_LIMITS.min;
-  const canGenerate = !!token && !tooShort;
+  const canGenerate = !!token && !tooShort && !generating;
 
   const submit = async () => {
     if (!canGenerate) return;
     const text = trimmed;
     setFailure(null);
     setResult(null);
+    setGenerating(true);
 
     const params = { model: DEFAULT_VIDEO_MODEL, prompt: text, durationSeconds: duration };
     try {
       let res;
       try {
-        res = await submitVideoJob(params, { apiKey: await ensureApiKey() });
+        res = await generateVideo(params, { apiKey: await ensureApiKey() });
       } catch (e) {
         // Rotate a rejected key (401) and retry once, mirroring chat/image.
         if (e instanceof VideoError && e.status === 401 && wallet) {
           forgetKey();
-          res = await submitVideoJob(params, { apiKey: await ensureApiKey(true) });
+          res = await generateVideo(params, { apiKey: await ensureApiKey(true) });
         } else {
           throw e;
         }
       }
-      jobMetaRef.current = { prompt: text, duration, startedAt: Date.now() };
-      setJob({ id: res.jobId, status: "queued", progress: null });
-      setGenerating(true);
+      setResult({ result: res, prompt: text, duration });
       setHistory((h) => [text, ...h.filter((p) => p !== text)].slice(0, 5));
     } catch (e) {
       setFailure(
@@ -230,77 +205,10 @@ export function VideoPanel() {
           ? { status: e.status, message: e.message, timeout: e.timeout }
           : { status: 0, message: (e as Error).message || "Something went wrong.", timeout: false },
       );
+    } finally {
+      setGenerating(false);
     }
   };
-
-  // Poll a running job. Kept in an effect keyed only on `generating` so the
-  // interval is created once per job and torn down when the job resolves.
-  useEffect(() => {
-    if (!generating || !job) return;
-    const jobId = job.id;
-    let apiKey: string | null = null;
-    let cancelled = false;
-
-    const tick = async () => {
-      if (!apiKey) {
-        try {
-          apiKey = await ensureApiKey();
-        } catch (e) {
-          if (cancelled) return;
-          stopPolling();
-          setGenerating(false);
-          setFailure({
-            status: 0,
-            message: (e as Error).message || "Could not mint an API key.",
-            timeout: false,
-          });
-          return;
-        }
-      }
-      try {
-        const next = await getVideoJob(jobId, { apiKey });
-        if (cancelled) return;
-        setJob(next);
-        if (isTerminalVideoStatus(next.status)) {
-          stopPolling();
-          setGenerating(false);
-          const meta = jobMetaRef.current;
-          if (next.status === "failed") {
-            setFailure({
-              status: 0,
-              message: next.error || "The video job failed. Try again.",
-              timeout: false,
-            });
-          } else {
-            setResult({
-              job: next,
-              prompt: meta?.prompt ?? "",
-              duration: meta?.duration ?? duration,
-              elapsedMs: Date.now() - (meta?.startedAt ?? Date.now()),
-            });
-          }
-        }
-      } catch (e) {
-        if (cancelled) return;
-        // A transient poll failure should not kill the job — keep polling. A
-        // 4xx means the job no longer exists; give up rather than spin.
-        const status = e instanceof VideoError ? e.status : 0;
-        if (status >= 400 && status < 500) {
-          stopPolling();
-          setGenerating(false);
-          setFailure({ status, message: (e as Error).message, timeout: false });
-        }
-      }
-    };
-
-    void tick();
-    pollRef.current = window.setInterval(() => void tick(), VIDEO_POLL_INTERVAL_MS);
-    return () => {
-      cancelled = true;
-      stopPolling();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [generating]);
 
   if (gate === "checking") {
     return (
@@ -492,7 +400,7 @@ export function VideoPanel() {
           Result
         </div>
         {generating ? (
-          <GeneratingView job={job} />
+          <GeneratingView />
         ) : failure ? (
           <ErrorView error={failure} onRetry={submit} canRetry={canGenerate} />
         ) : result ? (
@@ -521,38 +429,25 @@ function PanelHeader() {
         <Clapperboard size={16} className="text-text-tertiary" />
         <h2 className="text-sm font-medium text-text-primary">Video generation</h2>
       </div>
-      <Badge className="border-border-strong text-text-tertiary">coming soon</Badge>
+      <Badge className="border-border-strong text-text-tertiary">live</Badge>
     </div>
   );
 }
 
-/** Job progress while a clip renders. Presentational — the parent polls. */
-function GeneratingView({ job }: { job: VideoJob | null }) {
-  const progress = job?.progress ?? null;
-  const phase = job?.status === "processing" ? "processing" : "queued";
+/** Indeterminate progress while a clip renders. */
+function GeneratingView() {
   return (
     <div className="flex h-full min-h-[288px] flex-col items-center justify-center gap-4 text-center">
       <Loader2 size={22} className="animate-spin text-accent" />
       <div className="space-y-1">
-        <p className="text-sm text-text-secondary">
-          {phase === "queued" ? "Your clip is queued…" : "Rendering your clip…"}
+        <p className="text-sm text-text-secondary">Rendering your clip…</p>
+        <p className="text-xs text-text-muted">
+          The node holds the request open while it renders — a short clip takes tens of seconds.
         </p>
-        <p className="text-xs text-text-muted">A short clip takes minutes. This box updates on its own.</p>
       </div>
       <div className="h-1 w-full max-w-xs overflow-hidden rounded-full bg-bg-tertiary">
-        <div
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={progress ?? undefined}
-          className={cn(
-            "h-full rounded-full bg-accent transition-all",
-            !progress && "animate-pulse",
-          )}
-          style={progress ? { width: `${Math.min(100, Math.max(0, progress))}%` } : { width: "40%" }}
-        />
+        <div className="h-full w-2/5 animate-pulse rounded-full bg-accent" />
       </div>
-      {job && <p className="font-mono text-[11px] text-text-muted">{job.id}</p>}
     </div>
   );
 }
@@ -588,8 +483,8 @@ function ErrorView({
   );
 }
 
-function ResultView({ result }: { result: VideoResult }) {
-  const { job, prompt, duration, elapsedMs } = result;
+function ResultView({ result }: { result: VideoResultState }) {
+  const { result: video, prompt, duration } = result;
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -597,26 +492,20 @@ function ResultView({ result }: { result: VideoResult }) {
         <Badge className="border-border-strong text-text-secondary">{DEFAULT_VIDEO_MODEL}</Badge>
       </div>
 
-      {job.video_url ? (
-        <video
-          src={job.video_url}
-          controls
-          preload="metadata"
-          className="w-full rounded-md border border-border bg-bg-tertiary"
-        >
-          Your browser does not support video playback.
-        </video>
-      ) : (
-        <div className="flex h-48 items-center justify-center rounded-md border border-border bg-bg-tertiary">
-          <p className="text-xs text-text-tertiary">No video URL in the job response.</p>
-        </div>
-      )}
+      <video
+        src={video.url}
+        controls
+        preload="metadata"
+        className="w-full rounded-md border border-border bg-bg-tertiary"
+      >
+        Your browser does not support video playback.
+      </video>
 
       <Button
         variant="secondary"
         className="w-full"
-        onClick={() => void download(job.video_url!)}
-        disabled={!job.video_url}
+        onClick={() => void download(video.url)}
+        disabled={!video.url}
       >
         <Download size={13} /> Download
       </Button>
@@ -624,8 +513,7 @@ function ResultView({ result }: { result: VideoResult }) {
       <dl className="space-y-1.5 border-t border-dashed border-border pt-3 text-xs">
         <Meta label="Prompt" value={prompt} />
         <Meta label="Duration" value={`${duration}s`} />
-        <Meta label="Job" value={job.id} className="font-mono" />
-        <Meta label="Generated in" value={`${(elapsedMs / 1000).toFixed(1)}s`} />
+        <Meta label="Generated in" value={`${(video.elapsedMs / 1000).toFixed(1)}s`} />
       </dl>
 
       <p className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/5 p-2.5 text-[11px] text-text-secondary">

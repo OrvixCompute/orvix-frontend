@@ -15,9 +15,9 @@ let http: HttpStub;
 beforeEach(() => {
   clearPlaygroundStorage();
   seedPlaygroundKey();
-  // Declares only the chat/image/video-catalog routes. stubHttp throws on an
-  // undeclared route, so any attempt to reach a video endpoint fails the test
-  // loudly.
+  // Declares only the chat/image routes with no video model in the catalog.
+  // stubHttp throws on an undeclared route, so any attempt to reach a video
+  // endpoint fails the test loudly.
   http = stubHttp(playgroundRoutes());
 });
 afterEach(() => http?.restore());
@@ -27,12 +27,11 @@ async function openVideo() {
   await userEvent.click(screen.getByRole("button", { name: /video/i }));
 }
 
-describe("video without a GPU on the network", () => {
-  it("shows the honest waiting state rather than a form", async () => {
+describe("video when the catalog lists no video model", () => {
+  it("shows the unavailable state rather than a form", async () => {
     await openVideo();
     expect(await screen.findByText(VIDEO_PREVIEW.summary)).toBeInTheDocument();
     expect(screen.getByText(VIDEO_PREVIEW.state)).toBeInTheDocument();
-    expect(screen.getAllByText(/coming soon/i).length).toBeGreaterThan(0);
   });
 
   it("issues no request to any generation endpoint", async () => {
@@ -40,7 +39,6 @@ describe("video without a GPU on the network", () => {
     // The panel checks the catalog (GET /v1/models) — that is the gate, and it
     // is allowed. Nothing else may leave: no video, chat, or image generation.
     expect(http.sent("POST /v1/videos/generations")).toHaveLength(0);
-    expect(http.sent("GET /v1/videos/")).toHaveLength(0);
     expect(http.sent("POST /v1/chat/completions")).toHaveLength(0);
     expect(http.sent("POST /v1/images/generations")).toHaveLength(0);
   });
@@ -51,15 +49,14 @@ describe("video without a GPU on the network", () => {
     expect(screen.queryByLabelText(/prompt/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /generate video/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(document.querySelector("video")).toBeNull();
     // A waitlist with no backend would silently discard what it collected.
     expect(screen.queryByRole("textbox", { name: /email/i })).not.toBeInTheDocument();
   });
 
   it("keeps the video model out of every picker that builds a request", () => {
-    // The one constraint a future edit is most likely to break: adding it to a
-    // shared list would put an unservable model in a real request.
+    // Video uses its own picker (VIDEO_MODELS); it must not leak into the chat
+    // or image pickers that build real requests with different schemas.
     expect(MODELS.map((m) => m.id)).not.toContain(VIDEO_PREVIEW.id);
     expect(IMAGE_MODELS.map((m) => m.id)).not.toContain(VIDEO_PREVIEW.id);
   });

@@ -20,9 +20,9 @@ const TABS: { id: Mode; label: string; icon: typeof MessageSquare }[] = [
 
 const MODES: Mode[] = ["chat", "image", "video"];
 
-/** The inference playground: Chat and Image run against the network, Video is a
- *  coming-soon placeholder. The active tab is reflected in the URL (?mode=image)
- *  so it can be linked and reloaded. */
+/** The inference playground: Chat, Image, and Video run against the network.
+ *  The active tab is reflected in the URL (?mode=image) so it can be linked
+ *  and reloaded. */
 export function Playground({ subtitle }: { subtitle?: string }) {
   const [mode, setMode] = useState<Mode>("chat");
 

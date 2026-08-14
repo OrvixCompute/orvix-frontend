@@ -9,12 +9,6 @@ import {
   seedPlaygroundKey,
 } from "@/lib/testing/playgroundFixtures";
 
-// Poll fast in tests so a full job lifecycle completes within waitFor's budget.
-jest.mock("@/lib/constants/models", () => {
-  const actual = jest.requireActual("@/lib/constants/models");
-  return { ...actual, VIDEO_POLL_INTERVAL_MS: 50 };
-});
-
 let http: HttpStub;
 
 beforeEach(() => {
@@ -23,16 +17,14 @@ beforeEach(() => {
 });
 afterEach(() => http?.restore());
 
-/** A complete job lifecycle, driven by which route handler is hit first. */
-function videoJob(overrides: Partial<StubbedResponse> = {}): StubbedResponse {
+/** A successful synchronous video response, OpenAI images-style. */
+function videoSuccess(url = "https://orvix.network/videos/clip.mp4"): StubbedResponse {
   return {
-    body: {
-      id: "job-1",
-      status: "queued",
-      progress: null,
-      ...(typeof overrides.body === "object" && overrides.body ? overrides.body : {}),
+    body: { created: 1_754_700_000, data: [{ url }] },
+    headers: {
+      "X-Orvix-Quota-Remaining": "4",
+      "X-Orvix-Quota-Reset": new Date(Date.now() + 3_600_000).toISOString(),
     },
-    ...overrides,
   };
 }
 
@@ -63,48 +55,42 @@ describe("VideoPanel when the network serves video", () => {
     expect(screen.getByRole("button", { name: /generate video/i })).toBeEnabled();
   });
 
-  it("submits the job and polls until the clip is ready", async () => {
-    let polls = 0;
+  it("submits the prompt and renders the returned clip", async () => {
     renderReady({
-      "POST /v1/videos/generations": {
-        body: { id: "job-1", status: "queued", progress: null },
-      },
-      "GET /v1/videos/job-1": () => {
-        polls += 1;
-        if (polls === 1) return videoJob();
-        return {
-          body: {
-            id: "job-1",
-            status: "completed",
-            progress: 100,
-            video_url: "https://orvix.network/videos/clip.mp4",
-          },
-        };
-      },
+      "POST /v1/videos/generations": videoSuccess(),
     });
     await submitPrompt();
 
-    // The submit carries the model, prompt, and duration.
+    // The submit carries the model, prompt, and the frame count for the duration.
     const submits = http.sent("POST /v1/videos/generations");
-    await waitFor(() => expect(submits).toHaveLength(1));
+    expect(submits).toHaveLength(1);
     expect(submits[0].authorization).toBe("Bearer orvx_sk_playground");
     expect(submits[0].body).toMatchObject({
       model: "orvix-video-1",
       prompt: "a drone shot over a coastline",
-      duration_seconds: 5,
+      num_frames: 97,
+      fps: 24,
     });
 
-    // The first poll lands on "queued" and shows the progress bar.
-    expect(await screen.findByRole("progressbar")).toBeInTheDocument();
-    expect(http.sent("GET /v1/videos/job-1").length).toBeGreaterThan(0);
-
-    // The fast poll interval quickly reaches the completed job.
+    // The response URL becomes the <video> source directly.
     const video = await waitFor(() => {
       const el = document.querySelector("video");
       if (!el) throw new Error("video player did not render");
       return el;
     });
     expect(video.getAttribute("src")).toBe("https://orvix.network/videos/clip.mp4");
+  });
+
+  it("maps a 10s duration to the longer frame count", async () => {
+    renderReady({
+      "POST /v1/videos/generations": videoSuccess(),
+    });
+    await userEvent.selectOptions(await screen.findByLabelText(/duration/i), "10");
+    await submitPrompt("slow motion waves");
+
+    const submits = http.sent("POST /v1/videos/generations");
+    expect(submits).toHaveLength(1);
+    expect(submits[0].body).toMatchObject({ num_frames: 193 });
   });
 
   it("shows the waiting-for-GPU state when the model is listed but unavailable", async () => {
@@ -143,17 +129,14 @@ describe("VideoPanel when the network serves video", () => {
       "POST /v1/videos/generations": () => {
         attempts += 1;
         if (attempts === 1) return apiError(401, "invalid_api_key", "Invalid or revoked API key");
-        return { body: { id: "job-1", status: "queued", progress: null } };
-      },
-      "GET /v1/videos/job-1": {
-        body: { id: "job-1", status: "completed", video_url: "https://orvix.network/videos/c.mp4" },
+        return videoSuccess("https://orvix.network/videos/c.mp4");
       },
     });
     await submitPrompt();
 
     expect(http.sent("POST /v1/videos/generations")).toHaveLength(2);
     expect(http.sent("POST /v1/videos/generations")[1].authorization).toBe("Bearer orvx_sk_fresh");
-    // The retried submit lands, and the first poll completes the job.
+    // The retried submit returns a clip URL that becomes the player source.
     const video = await waitFor(() => {
       const el = document.querySelector("video");
       if (!el) throw new Error("video player did not render");
