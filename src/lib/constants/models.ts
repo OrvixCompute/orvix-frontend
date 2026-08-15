@@ -97,7 +97,7 @@ export const VIDEO_PREVIEW = {
   summary: "Text prompt in, a short clip out.",
   /** The honest one-liner. No date, no price, no queue — none of those exist. */
   state:
-    "The engine that generates the video is written and ships in the node package. The network to serve it is not connected yet: no catalog entry, no endpoint, no pricing.",
+    "The network serves it: orvix-video-1 is in the catalog and a video-capable node is live, so POST /v1/videos/generations returns a finished clip URL.",
   hardware:
     "It also needs dedicated hardware — a clip takes minutes, and the machine serves nothing else while it renders.",
 } as const;

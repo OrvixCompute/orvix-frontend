@@ -12,10 +12,10 @@ type Modality = {
 /**
  * What the network can actually run.
  *
- * Video carries the same "Coming soon" wording as the playground tab and says
- * why in the same breath. It is listed because the engine is real work worth
- * showing — not because it can be called. Nothing here links to a request path
- * for it, and it is not in the model catalog.
+ * Video is live: `orvix-video-1` is in the catalog, a video-capable node
+ * serves it, and POST /v1/videos/generations returns a finished clip URL.
+ * It still needs dedicated hardware — a clip takes minutes, during which the
+ * machine serves nothing else.
  */
 const MODALITIES: Modality[] = [
   {
@@ -32,9 +32,9 @@ const MODALITIES: Modality[] = [
   },
   {
     name: VIDEO_PREVIEW.label,
-    body: "Text prompt in, a short clip out. The engine is written; the network to serve it is not connected yet.",
+    body: "Text prompt in, a short clip out. orvix-video-1 serves real clips through the network.",
     status: VIDEO_PREVIEW.status,
-    live: false,
+    live: true,
   },
 ];
 

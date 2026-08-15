@@ -226,8 +226,8 @@ const CAPABILITIES: Capability[] = [
   },
   {
     name: "Video",
-    status: "coming-soon",
-    body: `${VIDEO_PREVIEW.summary} ${VIDEO_PREVIEW.state} It also needs dedicated hardware, since a clip takes minutes during which the machine serves nothing else.`,
+    status: "live",
+    body: `${VIDEO_PREVIEW.summary} ${VIDEO_PREVIEW.state} ${VIDEO_PREVIEW.hardware}`,
   },
 ];
 

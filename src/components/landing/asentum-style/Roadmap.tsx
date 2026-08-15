@@ -37,6 +37,11 @@ const PHASES: Phase[] = [
         status: "SHIPPED",
       },
       {
+        title: "Video generation",
+        note: "orvix-video-1 serving clips through POST /v1/videos/generations.",
+        status: "SHIPPED",
+      },
+      {
         title: "Tier system",
         note: "Bronze to Diamond: fee discount, rate limit, node priority.",
         status: "SHIPPED",
