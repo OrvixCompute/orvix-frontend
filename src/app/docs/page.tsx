@@ -12,7 +12,7 @@ import { config } from "@/lib/constants/config";
 export const metadata: Metadata = {
   title: "Documentation — Orvix",
   description:
-    "Build on Orvix: an OpenAI-compatible chat and image API on a permissionless GPU network, billed in USDC on Solana. Quickstart, endpoints, limits, pricing, and error codes.",
+    "Build on Orvix: an OpenAI-compatible chat, image, video and embeddings API on a permissionless GPU network, billed in USDC on Solana. Quickstart, endpoints, limits, pricing, and error codes.",
 };
 
 const base = `${config.apiUrl}/v1`;
@@ -22,6 +22,8 @@ const TOC = [
   { label: "authentication", href: "#authentication" },
   { label: "chat", href: "#chat" },
   { label: "images", href: "#images" },
+  { label: "videos", href: "#videos" },
+  { label: "embeddings", href: "#embeddings" },
   { label: "models", href: "#models" },
   { label: "free tier", href: "#free-tier" },
   { label: "pricing", href: "#pricing" },
@@ -100,6 +102,55 @@ const IMAGE_PARAMS: Param[] = [
   },
 ];
 
+const VIDEO_PARAMS: Param[] = [
+  {
+    name: "model",
+    type: "string",
+    default: "orvix-video-1",
+    notes: "The only video model in the catalog today.",
+  },
+  { name: "prompt", type: "string", default: "—", notes: "Required, non-empty." },
+  { name: "width", type: "integer", default: "704", notes: "256–1280." },
+  { name: "height", type: "integer", default: "480", notes: "256–720." },
+  { name: "num_frames", type: "integer", default: "97", notes: "9–257." },
+  { name: "fps", type: "integer", default: "24", notes: "8–60." },
+  {
+    name: "num_inference_steps",
+    type: "integer",
+    default: "30",
+    notes: "1–60. More steps, slower render.",
+  },
+  { name: "guidance_scale", type: "number", default: "3.0", notes: "0–20." },
+  {
+    name: "negative_prompt",
+    type: "string",
+    default: "null",
+    notes: "What the clip should avoid.",
+  },
+  { name: "seed", type: "integer", default: "null", notes: "Set for reproducible clips." },
+];
+
+const EMBEDDING_PARAMS: Param[] = [
+  {
+    name: "model",
+    type: "string",
+    default: "orvix-embed-1",
+    notes: "The only embedding model in the catalog today.",
+  },
+  {
+    name: "input",
+    type: "string | array",
+    default: "—",
+    notes: "Required. One string or up to 256 strings.",
+  },
+  {
+    name: "encoding_format",
+    type: "string",
+    default: "float",
+    notes: "float or base64.",
+  },
+];
+
 const PARAM_COLUMNS: DocsColumn<Param>[] = [
   { header: "parameter", cell: (p) => p.name, emphasis: true },
   { header: "type", cell: (p) => p.type },
@@ -123,6 +174,22 @@ const CHAT_MODELS: ChatModel[] = [
 const IMAGE_MODEL_ROWS = [
   { id: "orvix-image-1", max: "1024 × 1024", note: "Default model for /v1/images/generations." },
   { id: "flux-schnell", max: "1536 × 1536", note: "Larger canvas, same endpoint." },
+];
+
+const VIDEO_MODEL_ROWS = [
+  {
+    id: "orvix-video-1",
+    max: "1280 × 720",
+    note: "Default (and only) model for /v1/videos/generations. LTX-Video.",
+  },
+];
+
+const EMBEDDING_MODEL_ROWS = [
+  {
+    id: "orvix-embed-1",
+    dims: "768",
+    note: "Default (and only) model for /v1/embeddings. BGE base, L2-normalized.",
+  },
 ];
 
 interface Tier {
@@ -161,13 +228,13 @@ const RESPONSE_HEADERS: HeaderRow[] = [
   },
   {
     name: "X-Orvix-Quota-Remaining",
-    on: "chat, images",
+    on: "chat, images, videos",
     meaning: "Requests left in the current allowance.",
   },
   {
     name: "X-Orvix-Quota-Reset",
-    on: "images",
-    meaning: "When the daily image allowance resets (00:00 UTC).",
+    on: "images, videos",
+    meaning: "When the daily image/video allowance resets (00:00 UTC).",
   },
 ];
 
@@ -194,6 +261,21 @@ const ERRORS: ErrorRow[] = [
     status: "503",
     code: "no_image_provider",
     meaning: "No node serves that image model. Same as above: switch models rather than retry.",
+  },
+  {
+    status: "503",
+    code: "no_video_provider",
+    meaning: "No node serves the video model. Retrying will not help — check /v1/models.",
+  },
+  {
+    status: "503",
+    code: "no_embedding_provider",
+    meaning: "No node serves the embedding model. Same as above: do not retry.",
+  },
+  {
+    status: "504",
+    code: "node_timeout",
+    meaning: "The node did not finish in time — video renders can exceed the job timeout.",
   },
   {
     status: "429",
@@ -274,6 +356,20 @@ const ENDPOINTS: Endpoint[] = [
   },
   {
     group: "Inference",
+    method: "POST",
+    path: "/v1/videos/generations",
+    auth: "API key",
+    desc: "Text-to-video generation — synchronous, one clip per call",
+  },
+  {
+    group: "Inference",
+    method: "POST",
+    path: "/v1/embeddings",
+    auth: "API key",
+    desc: "OpenAI-compatible text embeddings, 768-dim, L2-normalized",
+  },
+  {
+    group: "Inference",
     method: "GET",
     path: "/v1/models",
     auth: "none",
@@ -292,7 +388,7 @@ const ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/v1/account/quota",
     auth: "JWT or key",
-    desc: "Chat and image allowance status, plus images generated in the last 24h",
+    desc: "Chat, image, and video allowance status, plus images generated in the last 24h",
   },
 
   {
@@ -531,7 +627,7 @@ export default function DocsPage() {
       <PageIntro
         eyebrow="documentation"
         title="Build on Orvix"
-        lead="Orvix exposes an OpenAI-compatible chat and image API powered by a permissionless GPU network and settled in USDC on Solana. If you can call OpenAI, you can call Orvix."
+        lead="Orvix exposes an OpenAI-compatible chat, image, video, and embeddings API powered by a permissionless GPU network and settled in USDC on Solana. If you can call OpenAI, you can call Orvix."
       />
 
       <Section title="On this page">
@@ -540,9 +636,9 @@ export default function DocsPage() {
 
       <Section id="quickstart" title="Quickstart">
         <p>
-          Three steps: get a key, make a chat call, make an image call. The first 1000 chat requests
-          and 50 images a day cost nothing, so you can get all the way through this without funding
-          anything.
+          Three steps: get a key, make a chat call, make an image call. The first 1000 chat requests,
+          50 images a day, and a daily video allowance cost nothing, so you can get all the way
+          through this without funding anything.
         </p>
         <p className="pt-1 text-text-primary">1. Create an API key</p>
         <p>
@@ -752,6 +848,67 @@ for chunk in stream:
         </p>
       </Section>
 
+      <Section id="videos" title="Video generation" wide>
+        <p className="max-w-2xl">
+          <Mono>POST /v1/videos/generations</Mono> turns a text prompt into a short clip. It is
+          synchronous: the request stays open while the node renders, then returns the clip URL.
+        </p>
+        <CodeBlock
+          language="bash"
+          code={`curl -X POST ${base}/videos/generations \\
+  -H "Authorization: Bearer orvx_sk_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "orvix-video-1",
+    "prompt": "a cat walking through a neon city",
+    "width": 704,
+    "height": 480,
+    "num_frames": 97,
+    "fps": 24
+  }'
+
+# => { "created": ..., "data": [{ "url": "${config.apiUrl}/videos/<id>.mp4" }] }`}
+        />
+        <div className="pt-2">
+          <DocsTable columns={PARAM_COLUMNS} rows={VIDEO_PARAMS} rowKey={(p) => p.name} />
+        </div>
+        <p className="max-w-2xl pt-2">
+          A clip takes minutes of GPU on the node, so the endpoint serializes per node — expect a
+          slow response. The returned video is deleted 24 hours after creation, so download anything
+          worth keeping. Video is free during the alpha, limited by a daily per-account allowance
+          shown by <Mono>GET /v1/account/quota</Mono>.
+        </p>
+      </Section>
+
+      <Section id="embeddings" title="Embeddings" wide>
+        <p className="max-w-2xl">
+          <Mono>POST /v1/embeddings</Mono> is the OpenAI embeddings endpoint: text in, vectors out.
+        </p>
+        <CodeBlock
+          language="bash"
+          code={`curl -X POST ${base}/embeddings \\
+  -H "Authorization: Bearer orvx_sk_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "orvix-embed-1",
+    "input": ["A document to index", "Another one"]
+  }'
+
+# => { "object": "list", "model": "orvix-embed-1",
+#      "data": [{ "object": "embedding", "index": 0, "embedding": [0.01, "..."] }],
+#      "usage": { "prompt_tokens": 8, "total_tokens": 8 } }`}
+        />
+        <div className="pt-2">
+          <DocsTable columns={PARAM_COLUMNS} rows={EMBEDDING_PARAMS} rowKey={(p) => p.name} />
+        </div>
+        <p className="max-w-2xl pt-2">
+          Up to <Mono>256</Mono> inputs of <Mono>8192</Mono> characters each. Vectors come back in
+          input order and are <Mono>L2-normalized</Mono>, so cosine similarity is a dot product.
+          Embeddings are free during the alpha, rate-limited per API key in their own bucket so an
+          indexing run cannot spend your chat allowance.
+        </p>
+      </Section>
+
       <Section id="models" title="Models" wide>
         <p className="max-w-2xl">
           <Mono>GET /v1/models</Mono> is public and returns the catalog in the OpenAI shape, plus an
@@ -791,14 +948,50 @@ for chunk in stream:
           rows={IMAGE_MODEL_ROWS}
           rowKey={(m) => m.id}
         />
+        <p className="pt-4 font-mono text-xs text-text-muted">video models</p>
+        <DocsTable
+          columns={[
+            {
+              header: "model",
+              cell: (m: (typeof VIDEO_MODEL_ROWS)[number]) => m.id,
+              emphasis: true,
+            },
+            { header: "max size", cell: (m: (typeof VIDEO_MODEL_ROWS)[number]) => m.max },
+            {
+              header: "notes",
+              cell: (m: (typeof VIDEO_MODEL_ROWS)[number]) => m.note,
+              className: "font-sans",
+            },
+          ]}
+          rows={VIDEO_MODEL_ROWS}
+          rowKey={(m) => m.id}
+        />
+        <p className="pt-4 font-mono text-xs text-text-muted">embedding models</p>
+        <DocsTable
+          columns={[
+            {
+              header: "model",
+              cell: (m: (typeof EMBEDDING_MODEL_ROWS)[number]) => m.id,
+              emphasis: true,
+            },
+            { header: "dimensions", cell: (m: (typeof EMBEDDING_MODEL_ROWS)[number]) => m.dims },
+            {
+              header: "notes",
+              cell: (m: (typeof EMBEDDING_MODEL_ROWS)[number]) => m.note,
+              className: "font-sans",
+            },
+          ]}
+          rows={EMBEDDING_MODEL_ROWS}
+          rowKey={(m) => m.id}
+        />
       </Section>
 
       <Section id="free-tier" title="Free tier">
         <p>
           Every account gets <span className="text-text-primary">1000 chat requests</span> as a
-          lifetime allowance and <span className="text-text-primary">50 images per day</span>,
-          resetting at 00:00 UTC. Nothing is charged until the chat allowance is spent, and in
-          practice ordinary usage never reaches the paid path.
+          lifetime allowance, <span className="text-text-primary">50 images per day</span>, and a
+          daily video allowance, all resetting at 00:00 UTC. Nothing is charged until the chat
+          allowance is spent, and in practice ordinary usage never reaches the paid path.
         </p>
         <p>
           Allowances are per account and identical for everyone — ORVX holdings do not change them
@@ -813,7 +1006,8 @@ for chunk in stream:
 #   "chat":  { "type": "free_tier", "lifetime_free_used": 12,
 #              "lifetime_free_limit": 1000 },
 #   "image": { "type": "grace_daily", "used_today": 3, "daily_limit": 50,
-#              "generated_images_last_24h": [] }
+#              "generated_images_last_24h": [] },
+#   "video": { "type": "grace_daily", "used_today": 0, "daily_limit": 3 }
 # }`}
         />
         <p>
@@ -826,7 +1020,8 @@ for chunk in stream:
         <p className="max-w-2xl">
           Past the free allowance, chat is metered per token and images per area, both settled in
           USDC against your balance. Billing is USDC-only — ORVX is never spent on fees; it affects
-          pricing only through the stake-based discount below.
+          pricing only through the stake-based discount below. Video and embeddings have no price
+          yet: both are free during the alpha, each behind its own daily allowance.
         </p>
         <p className="max-w-2xl">
           Chat rates are in the{" "}
@@ -861,9 +1056,10 @@ for chunk in stream:
 
       <Section id="rate-limits" title="Rate limits">
         <p>
-          Limits are per API key, per minute, and counted separately for chat and images — a burst
-          of images does not spend your chat allowance. The ceiling is the one shown for your tier
-          above. Exceeding it returns <Mono>429</Mono> with everything needed to back off.
+          Limits are per API key, per minute, and counted separately for chat, images, video, and
+          embeddings — a burst of images does not spend your chat allowance. The ceiling is the one
+          shown for your tier above. Exceeding it returns <Mono>429</Mono> with everything needed to
+          back off.
         </p>
         <CodeBlock
           language="json"
@@ -889,8 +1085,8 @@ for chunk in stream:
           the orchestrator logs — quote it when reporting a problem. Some codes add fields.
         </p>
         <p className="max-w-2xl">
-          The two 503s are the ones you are most likely to meet while the network is still small,
-          and they call for opposite responses. <Mono>capacity_exhausted</Mono> means nodes do serve
+          The 503s are the ones you are most likely to meet while the network is still small, and
+          they call for opposite responses. <Mono>capacity_exhausted</Mono> means nodes do serve
           your model but every one was busy — and chat already waited up to three seconds internally
           for a slot, so it means the network was saturated for that whole window. Retry it.
         </p>
@@ -907,8 +1103,10 @@ for chunk in stream:
 }`}
         />
         <p className="max-w-2xl">
-          <Mono>no_chat_provider</Mono> (and <Mono>no_image_provider</Mono> for images) means no
-          node on the network serves that model at all. Retrying cannot change that — call{" "}
+          <Mono>no_chat_provider</Mono> (and the per-model <Mono>no_image_provider</Mono>,{" "}
+          <Mono>no_video_provider</Mono>, and <Mono>no_embedding_provider</Mono> for their
+          endpoints) means no node on the network serves that model at all. Retrying cannot change
+          that — call{" "}
           <Mono>/v1/models</Mono> and pick one with <Mono>available: true</Mono>.
         </p>
         <CodeBlock
@@ -1054,8 +1252,8 @@ for chunk in stream:
         <p>
           The provider endpoints above are the account side of running hardware. The machine itself
           runs <Mono>orvix-node</Mono>, a Python agent published on PyPI: it holds an outbound
-          WebSocket to the orchestrator, registers its GPU, and serves the chat and image jobs it is
-          dispatched. No inbound port required.
+          WebSocket to the orchestrator, registers its GPU, and serves the chat, image, video, and
+          embedding jobs it is dispatched. No inbound port required.
         </p>
         <CodeBlock
           language="bash"
