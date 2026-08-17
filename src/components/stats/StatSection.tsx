@@ -4,7 +4,7 @@ import { StatCard } from "./StatCard";
 interface StatSectionProps {
   title: string;
   stats: StatCardData[];
-  columns?: 3 | 4;
+  columns?: 3 | 4 | 5;
   loading?: boolean;
   /** Optional context line under the title (e.g. "no nodes registered yet"). */
   note?: string;
@@ -29,9 +29,11 @@ export function StatSection({
 
         <div
           className={`mt-5 grid grid-cols-1 gap-4 ${
-            columns === 4
-              ? "sm:grid-cols-2 lg:grid-cols-4"
-              : "sm:grid-cols-2 lg:grid-cols-3"
+            columns === 5
+              ? "sm:grid-cols-2 lg:grid-cols-5"
+              : columns === 4
+                ? "sm:grid-cols-2 lg:grid-cols-4"
+                : "sm:grid-cols-2 lg:grid-cols-3"
           }`}
         >
           {stats.map((stat) => (

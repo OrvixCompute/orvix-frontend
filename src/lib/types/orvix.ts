@@ -248,6 +248,7 @@ export interface ComputeNodeStats {
   offline: number;
   chat_capable: number;
   image_capable: number;
+  video_capable: number;
   /** Postgres numeric — arrives as a string, parse before formatting. */
   total_vram_gb: string;
 }
@@ -276,9 +277,15 @@ export interface ComputeImageStats {
   generated_window: number;
 }
 
+export interface ComputeVideoStats {
+  generated_total: number;
+  generated_window: number;
+}
+
 export interface ComputeModelStats {
   chat: number;
   image: number;
+  video: number;
 }
 
 /**
@@ -292,6 +299,7 @@ export interface ComputeStats {
   providers: ComputeProviderStats;
   chat: ComputeChatStats;
   images: ComputeImageStats;
+  videos: ComputeVideoStats;
   models: ComputeModelStats;
   generated_at: string;
 }

@@ -12,6 +12,7 @@ import {
   Flame,
   MessageSquare,
   Image,
+  Video,
   Clock,
   Bot,
   type LucideIcon,
@@ -28,6 +29,7 @@ const ICONS: Record<IconName, LucideIcon> = {
   Flame,
   MessageSquare,
   Image,
+  Video,
   Clock,
   Bot,
 };

@@ -33,6 +33,7 @@ const LIVE_NETWORK_PLACEHOLDERS: StatCardData[] = [
 const AI_ACTIVITY_PLACEHOLDERS: StatCardData[] = [
   { label: "CHAT REQUESTS", value: "—", icon: "MessageSquare" },
   { label: "IMAGES GENERATED", value: "—", icon: "Image" },
+  { label: "VIDEOS GENERATED", value: "—", icon: "Video" },
   { label: "AVG RESPONSE TIME", value: "—", icon: "Clock" },
   { label: "MODELS SERVED", value: "—", icon: "Bot" },
 ];
@@ -61,7 +62,7 @@ function liveNetworkCards(stats: ComputeStats): StatCardData[] {
       value: formatVram(parseNumeric(nodes.total_vram_gb)),
       unit: " GB",
       icon: "MemoryStick",
-      sub: `${plural(nodes.chat_capable, "chat node")} · ${plural(nodes.image_capable, "image node")}`,
+      sub: `${plural(nodes.chat_capable, "chat node")} · ${plural(nodes.image_capable, "image node")} · ${plural(nodes.video_capable, "video node")}`,
     },
     {
       label: "PROVIDERS",
@@ -73,7 +74,7 @@ function liveNetworkCards(stats: ComputeStats): StatCardData[] {
 }
 
 function aiActivityCards(stats: ComputeStats): StatCardData[] {
-  const { chat, images, models, window_hours: hours } = stats;
+  const { chat, images, videos, models, window_hours: hours } = stats;
   const window = `in the last ${hours}h`;
 
   return [
@@ -90,6 +91,12 @@ function aiActivityCards(stats: ComputeStats): StatCardData[] {
       sub: `${formatNumber(images.generated_window)} ${window}`,
     },
     {
+      label: "VIDEOS GENERATED",
+      value: formatNumber(videos.generated_total),
+      icon: "Video",
+      sub: `${formatNumber(videos.generated_window)} ${window}`,
+    },
+    {
       label: "AVG RESPONSE TIME",
       value: chat.avg_latency_ms === null ? "—" : formatNumber(Math.round(chat.avg_latency_ms)),
       unit: chat.avg_latency_ms === null ? undefined : " ms",
@@ -101,9 +108,9 @@ function aiActivityCards(stats: ComputeStats): StatCardData[] {
     },
     {
       label: "MODELS SERVED",
-      value: formatNumber(models.chat + models.image),
+      value: formatNumber(models.chat + models.image + models.video),
       icon: "Bot",
-      sub: `${formatNumber(models.chat)} chat · ${formatNumber(models.image)} image`,
+      sub: `${formatNumber(models.chat)} chat · ${formatNumber(models.image)} image · ${formatNumber(models.video)} video`,
     },
   ];
 }
@@ -167,7 +174,7 @@ export function StatsDashboard() {
       <StatSection
         title="AI ACTIVITY"
         stats={stats ? aiActivityCards(stats) : AI_ACTIVITY_PLACEHOLDERS}
-        columns={4}
+        columns={5}
         loading={computeLoading}
       />
 
