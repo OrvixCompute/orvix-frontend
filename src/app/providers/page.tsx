@@ -35,7 +35,7 @@ const STEPS = [
   },
   {
     title: "Start serving",
-    body: "orvix-node start opens a WebSocket to the orchestrator, registers your GPU, and begins accepting chat and image jobs.",
+    body: "orvix-node start opens a WebSocket to the orchestrator, registers your GPU, and begins accepting chat, image, and video jobs.",
   },
   {
     title: "Get paid in USDC",
@@ -60,6 +60,7 @@ const COMMANDS: Command[] = [
 
 const REQUIREMENTS = [
   "NVIDIA GPU with CUDA 11+ and 8 GB or more of VRAM, on Linux, for real inference",
+  "A beefier GPU for video: orvix-video-1 renders clips locally, and the machine serves nothing else while one runs",
   "Python 3.11 or newer",
   "A stable connection — the agent holds an outbound WebSocket, so no inbound port or public IP is needed",
   "A Solana wallet to register with and to receive USDC payouts",
@@ -131,7 +132,7 @@ orvix-node start`}
         </ol>
         <div className="flex flex-wrap gap-x-6 gap-y-2 pt-2 text-sm">
           <Link
-            href={dashboardRoutes.staking}
+            href={dashboardRoutes.provider}
             className="inline-flex items-center gap-1.5 text-text-primary transition-colors hover:text-accent-hover"
           >
             Open the dashboard <ArrowRight size={14} />
@@ -159,8 +160,10 @@ orvix-node config show    # resolved config, secrets masked`}
         <p>
           Inference is mocked by default, so the whole pipeline runs on a machine with no GPU at all
           — useful for checking the connection before committing hardware. Set{" "}
-          <Mono>backend: &quot;vllm&quot;</Mono> to serve real traffic. The agent also exposes a
-          local health server on port 9000 with <Mono>/health</Mono> and <Mono>/metrics</Mono>.
+          <Mono>backend: &quot;vllm&quot;</Mono> to serve real chat and image traffic. Video needs
+          dedicated hardware: <Mono>orvix-video-1</Mono> renders clips on the node, and the machine
+          serves nothing else while one is running. The agent also exposes a local health server on
+          port 9000 with <Mono>/health</Mono> and <Mono>/metrics</Mono>.
         </p>
       </Section>
 
@@ -182,9 +185,9 @@ orvix-node config show    # resolved config, secrets masked`}
           Solana. Staking ORVX raises your tier, which improves routing priority.
         </p>
         <p>
-          The whitepaper sets a 25,000 ORVX minimum stake to register as a provider. That gate is
-          switched off for the alpha, so you can register and start serving without staking anything
-          — expect it to be enforced once staking goes live.
+          The whitepaper sets a 25,000 ORVX minimum stake to register as a provider. The gate stays
+          off until staking goes live (blocked on the ORVX mint launch), so you can register and
+          start serving without staking anything today.
         </p>
       </Section>
 
