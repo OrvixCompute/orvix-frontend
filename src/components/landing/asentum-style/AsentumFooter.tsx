@@ -20,7 +20,7 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
     title: "Network.",
     links: [
       { label: "Playground", href: routes.playground },
-      { label: "API Reference", href: routes.docs }, // TODO(orvix): dedicated API ref route
+      { label: "API Reference", href: "/docs#endpoints" },
       { label: "Providers", href: routes.providers },
       { label: "Staking", href: routes.staking },
       { label: "ORVX Token", href: routes.buy },
@@ -45,7 +45,6 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
   },
 ];
 
-// TODO(orvix): no /disclosures route yet — points at /terms for now.
 const BOTTOM_LINKS: FooterLink[] = [
   { label: "Disclosures", href: "/terms" },
   { label: "Privacy", href: "/privacy" },

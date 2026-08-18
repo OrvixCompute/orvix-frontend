@@ -9,10 +9,10 @@ const PARTNERS = [
 
 export function PartnerStrip() {
   return (
-    <section className="border-t border-[#1F1F1F] px-[4%] py-10">
-      <div className="mx-auto flex max-w-7xl flex-col items-center gap-6">
-        <span className="font-dm-mono text-xs uppercase tracking-[0.15em] text-[#5A5A5A]">
-          Partners
+    <section className="border-t border-[#1F1F1F] px-[4%] py-8">
+      <div className="mx-auto flex max-w-7xl flex-col items-center gap-5">
+        <span className="font-dm-mono text-[11px] uppercase tracking-[0.2em] text-[#5A5A5A]">
+          Trusted by
         </span>
         <div className="flex flex-wrap items-center justify-center gap-8">
           {PARTNERS.map((partner) => {
@@ -22,7 +22,7 @@ export function PartnerStrip() {
                 alt={partner.alt}
                 width={96}
                 height={96}
-                className="h-12 w-auto opacity-80 transition-opacity hover:opacity-100"
+                className="h-10 w-auto opacity-70 transition-opacity hover:opacity-100"
               />
             );
             return partner.href ? (

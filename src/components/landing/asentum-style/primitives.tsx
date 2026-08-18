@@ -27,12 +27,6 @@ export function DualHeading({
   );
 }
 
-// Placeholder gradient for image slots until real assets are dropped in.
-// TODO(orvix): swap for real artwork when available.
-export function ImagePlaceholder({ className = "" }: { className?: string }) {
-  return <div className={`w-full bg-gradient-to-b from-[#1A1A1A] to-[#0A0A0A] ${className}`} />;
-}
-
 // Framed brand artwork for image slots. Fills its sized parent and adds a subtle
 // hairline border to match the dark Asentum aesthetic. `fit` controls how the
 // image sits in the frame: "cover" crops to fill, "contain" preserves the whole

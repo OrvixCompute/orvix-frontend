@@ -1,66 +1,62 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useGetComputeStatsQuery } from "@/lib/store/api/networkApi";
+import type { ComputeStats } from "@/lib/types/orvix";
 
-// Chronological seed (oldest first, newest at the bottom) so it reads like a
-// live `tail -f`. Matches the initial server render, then streams on the client.
-const SEED = [
-  "[09:41:40] job.complete   node=9f23ab10  model=qwen-2.5-7b  tokens=1280  cost=0.000078 USDC",
-  "[09:41:48] node.heartbeat id=9f23ab10  gpu=RTX-4090  jobs_running=2",
-  "[09:41:55] revenue.split  provider=0.000022  buyback=0.0000045  treasury=0.0000027",
-  "[09:42:01] auth.verify    wallet=5tzF...uAi9  jwt.issued",
-  "[09:42:08] job.dispatch   node=1c101f60  tier=gold  discount=15%",
-  "[09:42:14] node.heartbeat id=1c101f60  gpu=RTX-4000-Ada  jobs_running=0",
-  "[09:42:17] job.complete   node=1c101f60  model=qwen-2.5-7b  tokens=512  cost=0.000031 USDC",
-];
+// Live network snapshot, polled from GET /v1/network/stats. The backend has
+// no public event stream, so instead of faking per-job events we render the
+// real aggregate state with a real timestamp — honest, and still "live".
 
-const NODES = ["1c101f60", "9f23ab10", "a7b2c3d4", "3e5f7a90", "b1d4e6f2"];
-const GPUS = ["RTX-4090", "RTX-4000-Ada", "A100-40GB", "L40S"];
-const WALLETS = ["5tzF...uAi9", "8kQm...rP2x", "Bn4v...9wzc", "Ge7h...kL3a"];
+const POLL_MS = 15_000;
 
 const pad = (n: number) => String(n).padStart(2, "0");
-const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
-const rint = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-const node = () => pick(NODES);
 
-const EVENTS: (() => string)[] = [
-  () =>
-    `job.complete   node=${node()}  model=qwen-2.5-7b  tokens=${rint(128, 2048)}  cost=0.0000${rint(10, 99)} USDC`,
-  () => `node.heartbeat id=${node()}  gpu=${pick(GPUS)}  jobs_running=${rint(0, 4)}`,
-  () =>
-    `job.dispatch   node=${node()}  tier=${pick(["gold", "silver", "bronze"])}  discount=${pick(["15%", "10%", "5%"])}`,
-  () => `auth.verify    wallet=${pick(WALLETS)}  jwt.issued`,
-  () =>
-    `revenue.split  provider=0.0000${rint(10, 40)}  buyback=0.0000${rint(1, 9)}  treasury=0.0000${rint(1, 9)}`,
-];
+function clock(): string {
+  const d = new Date();
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function fmt(n: number): string {
+  return new Intl.NumberFormat("en-US").format(n);
+}
+
+function fmtVram(gb: string): string {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(Number(gb));
+}
+
+/** Compact magnitude: 12,878 → "12.9k", 1,200,000 → "1.2M". */
+function compact(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return String(n);
+}
+
+function linesFor(stats: ComputeStats): string[] {
+  const { nodes, gpus, providers, chat, images, videos, models } = stats;
+  const gpuCount = gpus.reduce((total, gpu) => total + gpu.count, 0);
+
+  return [
+    `snapshot    nodes=${nodes.online}/${nodes.registered} online  gpus=${gpuCount}  vram=${fmtVram(nodes.total_vram_gb)}GB`,
+    `providers   total=${providers.total}  staked=${providers.staked}`,
+    `chat        req=${fmt(chat.requests_total)}  tokens=${compact(chat.tokens_total)}  avg=${chat.avg_latency_ms === null ? "—" : `${Math.round(chat.avg_latency_ms)}ms`}`,
+    `images      gen=${fmt(images.generated_total)}  (${fmt(images.generated_window)} last ${stats.window_hours}h)`,
+    `videos      gen=${fmt(videos.generated_total)}  (${fmt(videos.generated_window)} last ${stats.window_hours}h)`,
+    `models      chat ${models.chat_available}/${models.chat} · img ${models.image_available}/${models.image} · vid ${models.video_available}/${models.video}`,
+  ];
+}
 
 export function NetworkFeed() {
-  const [lines, setLines] = useState<string[]>(SEED);
+  const { data } = useGetComputeStatsQuery(undefined, { pollingInterval: POLL_MS });
+  const [now, setNow] = useState(() => clock());
 
+  // Advance the clock every second so the feed visibly ticks.
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    // Advance a clock from the last seed timestamp and append synthetic events.
-    let h = 9;
-    let m = 42;
-    let s = 17;
-
-    const id = window.setInterval(() => {
-      s += rint(2, 7);
-      if (s >= 60) {
-        s -= 60;
-        m += 1;
-      }
-      if (m >= 60) {
-        m -= 60;
-        h = (h + 1) % 24;
-      }
-      const line = `[${pad(h)}:${pad(m)}:${pad(s)}] ${pick(EVENTS)()}`;
-      setLines((prev) => [...prev.slice(-6), line]);
-    }, 1800);
-
+    const id = window.setInterval(() => setNow(clock()), 1000);
     return () => window.clearInterval(id);
   }, []);
+
+  const lines = data ? linesFor(data) : null;
 
   return (
     <div className="space-y-2">
@@ -69,19 +65,28 @@ export function NetworkFeed() {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
         </span>
-        <span className="font-mono text-xs text-text-muted">network feed · live</span>
+        <span className="font-mono text-xs text-text-muted">network stats · live</span>
+        <span className="font-mono text-xs text-text-muted">· {now}</span>
       </div>
 
       <div className="overflow-x-auto rounded-md border border-border bg-bg-secondary px-4 py-3 font-mono text-xs leading-6">
         <div className="whitespace-pre text-text-secondary">
           <span className="select-none text-text-muted">$ </span>
-          tail -f orvix/network/events.jsonl
+          orvix snapshot --live
         </div>
-        {lines.map((line, i) => (
-          <div key={`${i}-${line}`} className="animate-fade-in whitespace-pre text-text-primary">
-            {line}
-          </div>
-        ))}
+        {lines ? (
+          lines.map((line, i) => (
+            <div key={i} className="animate-fade-in whitespace-pre text-text-primary">
+              {line}
+            </div>
+          ))
+        ) : (
+          <>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-5 animate-pulse rounded bg-bg-tertiary" />
+            ))}
+          </>
+        )}
         <span className="inline-block animate-cursor-blink text-text-primary">▍</span>
       </div>
     </div>

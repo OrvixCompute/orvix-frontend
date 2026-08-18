@@ -286,6 +286,9 @@ export interface ComputeModelStats {
   chat: number;
   image: number;
   video: number;
+  chat_available: number;
+  image_available: number;
+  video_available: number;
 }
 
 /**
