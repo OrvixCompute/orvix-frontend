@@ -23,6 +23,11 @@ DEPLOY_PATH="${DEPLOY_PATH:-/opt/orvix/frontend}"
 APP_NAME="${APP_NAME:-orvix-frontend}"
 # 3003 is what the nginx orvix.network vhost proxies "/" to; keep them in sync.
 PORT="${PORT:-3003}"
+# Public URL of the deployed site. Next.js loads `.env.local` in every mode and
+# it OVERRIDES `.env.production`, so a local dev env (http://localhost:3000)
+# would otherwise get baked into the client bundle and break every browser-side
+# API call. The deploy must build against the real public URLs instead.
+DEPLOY_URL="${DEPLOY_URL:-https://orvix.network}"
 
 if [[ -z "${DEPLOY_HOST}" ]]; then
   echo "error: DEPLOY_HOST is not set (e.g. projecteon)" >&2
@@ -49,6 +54,10 @@ else
   npm ci
   echo "${LOCK_HASH}" > "${LOCK_STAMP}"
 fi
+# `.env.local` is not ignored by Next's env precedence, so export the public
+# URLs explicitly to override it and bake the real endpoints into the bundle.
+export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-${DEPLOY_URL}}"
+export NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-${DEPLOY_URL}}"
 npm run build
 
 echo "==> Syncing build output to ${DEPLOY_HOST}:${DEPLOY_PATH}"
