@@ -12,7 +12,7 @@ import { config } from "@/lib/constants/config";
 export const metadata: Metadata = {
   title: "Documentation — Orvix",
   description:
-    "Build on Orvix: an OpenAI-compatible chat, image, video and embeddings API on a permissionless GPU network, billed in USDC on Solana. Quickstart, endpoints, limits, pricing, and error codes.",
+    "Build on Orvix: an OpenAI-compatible chat, image, video and embeddings API on a permissionless GPU network, plus Solana token intelligence. Billed in USDC on Solana. Quickstart, endpoints, limits, pricing, and error codes.",
 };
 
 const base = `${config.apiUrl}/v1`;
@@ -24,6 +24,7 @@ const TOC = [
   { label: "images", href: "#images" },
   { label: "videos", href: "#videos" },
   { label: "embeddings", href: "#embeddings" },
+  { label: "token intel", href: "#token-intel" },
   { label: "models", href: "#models" },
   { label: "free tier", href: "#free-tier" },
   { label: "pricing", href: "#pricing" },
@@ -601,10 +602,61 @@ const ENDPOINTS: Endpoint[] = [
   },
   { group: "Network", method: "GET", path: "/v1", auth: "none", desc: "API root and version" },
   { group: "Network", method: "GET", path: "/health", auth: "none", desc: "Liveness probe" },
+
+  {
+    group: "Token Intel",
+    method: "GET",
+    path: "/v1/tokens/{ca}",
+    auth: "JWT",
+    desc: "Token profile: metadata, supply, price, liquidity, risk warnings",
+  },
+  {
+    group: "Token Intel",
+    method: "GET",
+    path: "/v1/tokens/{ca}/accumulation",
+    auth: "JWT",
+    desc: "Accumulation score 0–100 with component metrics",
+  },
+  {
+    group: "Token Intel",
+    method: "GET",
+    path: "/v1/tokens/{ca}/holders",
+    auth: "JWT",
+    desc: "Top holders resolved to wallets with balance and supply share",
+  },
+  {
+    group: "Token Intel",
+    method: "GET",
+    path: "/v1/tokens/{ca}/early-buyers",
+    auth: "JWT",
+    desc: "First-buy evidence for top holders with tx signatures",
+  },
+  {
+    group: "Token Intel",
+    method: "GET",
+    path: "/v1/tokens/{ca}/social",
+    auth: "JWT",
+    desc: "DexScreener + Twitter social analysis with sentiment",
+  },
+  {
+    group: "Token Intel",
+    method: "GET",
+    path: "/v1/tokens/{ca}/clusters",
+    auth: "JWT",
+    desc: "Coordinated wallet cluster detection with confidence scores",
+  },
+  {
+    group: "Token Intel",
+    method: "GET",
+    path: "/v1/tokens/{ca}/intelligence",
+    auth: "JWT",
+    desc: "AI-generated narrative, risk flags, and watch signals from GPU node",
+  },
 ];
 
 const ENDPOINT_GROUPS = [
   "Inference",
+  "Token Intel",
   "Account",
   "Auth",
   "API keys",
@@ -627,7 +679,7 @@ export default function DocsPage() {
       <PageIntro
         eyebrow="documentation"
         title="Build on Orvix"
-        lead="Orvix exposes an OpenAI-compatible chat, image, video, and embeddings API powered by a permissionless GPU network and settled in USDC on Solana. If you can call OpenAI, you can call Orvix."
+        lead="Orvix exposes an OpenAI-compatible chat, image, video, and embeddings API powered by a permissionless GPU network and settled in USDC on Solana. The Token Intel API adds Solana token intelligence — accumulation, holders, social, clusters, and AI analysis. If you can call OpenAI, you can call Orvix."
       />
 
       <Section title="On this page">
@@ -674,6 +726,12 @@ export default function DocsPage() {
             className="inline-flex items-center gap-1.5 text-text-primary transition-colors hover:text-accent-hover"
           >
             Try it in the playground <ArrowRight size={14} />
+          </Link>
+          <Link
+            href={`${routes.playground}?mode=intel`}
+            className="text-text-secondary transition-colors hover:text-text-primary"
+          >
+            Token Intel playground
           </Link>
           <Link
             href="#endpoints"
@@ -907,6 +965,98 @@ for chunk in stream:
           Embeddings are free during the alpha, rate-limited per API key in their own bucket so an
           indexing run cannot spend your chat allowance.
         </p>
+      </Section>
+
+      <Section id="token-intel" title="Token intelligence">
+        <p>
+          The Token Intel API lets you analyze any Solana token by its contract address (CA). Paste a
+          mint address and get a full intelligence report: metadata, price, liquidity, holder
+          distribution, accumulation signals, social metrics, coordinated wallet clusters, and an
+          AI-generated narrative.
+        </p>
+        <p>
+          All endpoints are JWT-authenticated and rate-limited. Fire them in parallel — each is
+          independent and returns its own data, so partial failures do not block the rest.
+        </p>
+        <CodeBlock
+          language="bash"
+          code={`# Token profile
+curl "${base}/tokens/So11111111111111111111111111111111111111112" \\
+  -H "Authorization: Bearer <JWT>"
+
+# => {
+#   "mint": "So11111111111111111111111111111111111111112",
+#   "metadata": { "name": "Wrapped SOL", "symbol": "SOL", "uri": null },
+#   "supply": { "amount": "...", "decimals": 9, "ui_amount_string": "..." },
+#   "price_usdc": 148.52,
+#   "liquidity": { "estimated_usdc": 12500000, "pool_count": 42 },
+#   "holders": { "total_holders": 850000, "top_holders": [...], "top10_share": 0.35 },
+#   "risk": { "warnings": [] },
+#   "scanned_at": "2026-08-21T12:00:00Z"
+# }`}
+        />
+        <p className="pt-2 text-text-primary">Endpoints</p>
+        <p>
+          All seven endpoints take a mint address as the path parameter <Mono>{`{ca}`}</Mono> and
+          return independent data:
+        </p>
+        <div className="space-y-1.5 font-mono text-xs">
+          <p>
+            <Mono>GET /v1/tokens/{`{ca}`}</Mono>{" "}
+            <span className="font-sans text-text-secondary">— token profile (metadata, supply, price, liquidity, risk)</span>
+          </p>
+          <p>
+            <Mono>GET /v1/tokens/{`{ca}`}/accumulation</Mono>{" "}
+            <span className="font-sans text-text-secondary">— accumulation score 0–100 with component metrics</span>
+          </p>
+          <p>
+            <Mono>GET /v1/tokens/{`{ca}`}/holders</Mono>{" "}
+            <span className="font-sans text-text-secondary">— top holders resolved to wallets</span>
+          </p>
+          <p>
+            <Mono>GET /v1/tokens/{`{ca}`}/early-buyers</Mono>{" "}
+            <span className="font-sans text-text-secondary">— first-buy evidence for top holders</span>
+          </p>
+          <p>
+            <Mono>GET /v1/tokens/{`{ca}`}/social</Mono>{" "}
+            <span className="font-sans text-text-secondary">— DexScreener + Twitter social analysis</span>
+          </p>
+          <p>
+            <Mono>GET /v1/tokens/{`{ca}`}/clusters</Mono>{" "}
+            <span className="font-sans text-text-secondary">— coordinated wallet cluster detection</span>
+          </p>
+          <p>
+            <Mono>GET /v1/tokens/{`{ca}`}/intelligence</Mono>{" "}
+            <span className="font-sans text-text-secondary">— AI narrative from GPU node</span>
+          </p>
+        </div>
+        <p className="pt-2 text-text-primary">Accumulation score</p>
+        <p>
+          The accumulation endpoint returns a composite score from 0 to 100 with a label:{" "}
+          <Mono>distribution</Mono> (0–39), <Mono>weak</Mono> (40–59), <Mono>moderate</Mono> (60–79),
+          or <Mono>strong</Mono> (80–100). Component scores for distribution, inflow, and activity
+          are included in <Mono>metrics</Mono>.
+        </p>
+        <p className="pt-2 text-text-primary">Cluster detection</p>
+        <p>
+          The clusters endpoint identifies wallets that move together — shared funding sources,
+          coordinated buy timing, or overlapping holdings. Each cluster carries a confidence score
+          (0–1) and the signals that triggered it. A confidence above 0.6 warrants attention.
+        </p>
+        <p className="pt-2 text-text-primary">AI intelligence</p>
+        <p>
+          The intelligence endpoint runs the token data through a GPU-hosted model and returns a
+          narrative analysis, risk flags, and a <Mono>watch_next</Mono> summary. This is the slowest
+          endpoint — expect a few seconds of latency while the node processes.
+        </p>
+        <div className="flex flex-wrap gap-x-6 gap-y-2 pt-2 text-sm">
+          <Link
+            href={`${routes.playground}?mode=intel`}
+            className="inline-flex items-center gap-1.5 text-text-primary transition-colors hover:text-accent-hover"
+          >
+            Try it in the playground <ArrowRight size={14} />
+          </Link>
+        </div>
       </Section>
 
       <Section id="models" title="Models" wide>
