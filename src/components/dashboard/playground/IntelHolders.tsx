@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils/cn";
@@ -20,8 +21,10 @@ function confidenceColor(c: number): string {
   return "bg-danger";
 }
 
-export function IntelHolders({ data }: { data: IntelData }) {
+export function IntelHolders({ data, pending }: { data: IntelData; pending: Set<string> }) {
   const { holders, clusters } = data;
+  const holdersLoading = pending.has("holders");
+  const clustersLoading = pending.has("clusters");
 
   const top10Pct = holders?.top10_share != null ? holders.top10_share * 100 : null;
   const chartData =
@@ -41,7 +44,11 @@ export function IntelHolders({ data }: { data: IntelData }) {
           <div className="mb-3 text-[11px] font-medium uppercase tracking-wide text-text-muted">
             Top 10 Share
           </div>
-          {chartData ? (
+          {holdersLoading ? (
+            <div className="flex items-center justify-center gap-2 py-12 text-xs text-text-muted">
+              <Loader2 size={14} className="animate-spin" /> Loading...
+            </div>
+          ) : chartData ? (
             <div className="flex flex-col items-center">
               <div className="h-[160px] w-[160px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -87,7 +94,11 @@ export function IntelHolders({ data }: { data: IntelData }) {
           <div className="mb-3 text-[11px] font-medium uppercase tracking-wide text-text-muted">
             Top Holders
           </div>
-          {holders && holders.top_holders.length > 0 ? (
+          {holdersLoading ? (
+            <div className="flex items-center justify-center gap-2 py-12 text-xs text-text-muted">
+              <Loader2 size={14} className="animate-spin" /> Loading holders...
+            </div>
+          ) : holders && holders.top_holders.length > 0 ? (
             <>
               {/* Desktop table */}
               <div className="hidden sm:block">
@@ -153,7 +164,11 @@ export function IntelHolders({ data }: { data: IntelData }) {
         <div className="mb-3 text-[11px] font-medium uppercase tracking-wide text-text-muted">
           Wallet Clusters
         </div>
-        {clusters && clusters.clusters.length > 0 ? (
+        {clustersLoading ? (
+          <div className="flex items-center justify-center gap-2 py-12 text-xs text-text-muted">
+            <Loader2 size={14} className="animate-spin" /> Analyzing clusters...
+          </div>
+        ) : clusters && clusters.clusters.length > 0 ? (
           <div className="space-y-3">
             {clusters.clusters.map((cluster) => (
               <div

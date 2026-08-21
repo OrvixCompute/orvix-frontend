@@ -1,11 +1,28 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils/cn";
 import type { IntelData } from "@/components/dashboard/playground/TokenIntel";
 
-export function IntelAI({ data }: { data: IntelData }) {
+export function IntelAI({ data, pending }: { data: IntelData; pending: Set<string> }) {
   const { intelligence } = data;
+  const aiLoading = pending.has("intelligence");
+
+  if (aiLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-border bg-bg-secondary py-16 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-dashed border-border-strong bg-bg-tertiary">
+          <GpuIcon />
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm text-text-secondary">ORVIX AI is analyzing...</p>
+          <p className="text-xs text-text-muted">Powered by ORVX GPU Compute Network</p>
+        </div>
+        <Loader2 size={14} className="animate-spin text-accent" />
+      </div>
+    );
+  }
 
   if (!intelligence) {
     return (

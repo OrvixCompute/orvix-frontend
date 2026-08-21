@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Loader2 } from "lucide-react";
 import { TruncatedAddress } from "@/components/dashboard/playground/intel-shared";
 import type { IntelData, EarlyBuyer } from "@/components/dashboard/playground/TokenIntel";
 
@@ -17,8 +17,17 @@ function solscanTxUrl(sig: string): string {
   return `https://solscan.io/tx/${sig}`;
 }
 
-export function IntelBuyers({ data }: { data: IntelData }) {
+export function IntelBuyers({ data, pending }: { data: IntelData; pending: Set<string> }) {
   const buyers = data.earlyBuyers;
+  const buyersLoading = pending.has("earlyBuyers");
+
+  if (buyersLoading) {
+    return (
+      <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-bg-secondary py-16 text-xs text-text-muted">
+        <Loader2 size={14} className="animate-spin" /> Loading early buyers...
+      </div>
+    );
+  }
 
   if (!buyers || buyers.length === 0) {
     return (

@@ -152,6 +152,8 @@ export function TokenIntel() {
   const [activeTab, setActiveTab] = useState<SubTab>("overview");
   const [data, setData] = useState<IntelData | null>(null);
   const [recent, setRecent] = useState<string[]>([]);
+  // Track which endpoints are still pending for per-section loading indicators
+  const [pending, setPending] = useState<Set<string>>(new Set());
 
   // Read ?ca= from URL on mount
   useEffect(() => {
@@ -184,48 +186,49 @@ export function TokenIntel() {
     setData(null);
 
     const headers = { Authorization: `Bearer ${token}` };
+    const allKeys = ["scan", "accumulation", "holders", "earlyBuyers", "social", "clusters", "intelligence"];
+    setPending(new Set(allKeys));
+
+    // Initialize empty data so sub-tabs render immediately with loading states
+    const initial: IntelData = {
+      scan: null, accumulation: null, holders: null, earlyBuyers: null,
+      social: null, clusters: null, intelligence: null,
+    };
+    setData(initial);
+    updateUrl(target);
+    setRecent((prev) => [target, ...prev.filter((c) => c !== target)].slice(0, 5));
+
+    const fetchJson = async <T,>(url: string): Promise<T | null> => {
+      try {
+        const res = await fetch(url, { headers });
+        if (!res.ok) return null;
+        return (await res.json()) as T;
+      } catch {
+        return null;
+      }
+    };
+
+    // Fire all requests in parallel, update state as each resolves
+    const settle = async <T,>(key: keyof IntelData, url: string) => {
+      const result = await fetchJson<T>(url);
+      setData((prev) => (prev ? { ...prev, [key]: result } : prev));
+      setPending((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    };
 
     try {
-      const [scanRes, accRes, holdersRes, buyersRes, socialRes, clustersRes, intelRes] =
-        await Promise.allSettled([
-          fetch(`${apiUrl}/v1/tokens/${target}`, { headers }),
-          fetch(`${apiUrl}/v1/tokens/${target}/accumulation`, { headers }),
-          fetch(`${apiUrl}/v1/tokens/${target}/holders`, { headers }),
-          fetch(`${apiUrl}/v1/tokens/${target}/early-buyers`, { headers }),
-          fetch(`${apiUrl}/v1/tokens/${target}/social`, { headers }),
-          fetch(`${apiUrl}/v1/tokens/${target}/clusters`, { headers }),
-          fetch(`${apiUrl}/v1/tokens/${target}/intelligence`, { headers }),
-        ]);
-
-      const unwrap = async <T,>(r: PromiseSettledResult<Response>): Promise<T | null> => {
-        if (r.status === "rejected") return null;
-        if (!r.value.ok) return null;
-        try {
-          return (await r.value.json()) as T;
-        } catch {
-          return null;
-        }
-      };
-
-      const result: IntelData = {
-        scan: await unwrap<TokenScan>(scanRes),
-        accumulation: await unwrap<Accumulation>(accRes),
-        holders: await unwrap<Holders>(holdersRes),
-        earlyBuyers: await unwrap<EarlyBuyer[]>(buyersRes),
-        social: await unwrap<SocialAnalysis>(socialRes),
-        clusters: await unwrap<ClusterAnalysis>(clustersRes),
-        intelligence: await unwrap<Intelligence>(intelRes),
-      };
-
-      // Check if all failed
-      const anySuccess = Object.values(result).some((v) => v !== null);
-      if (!anySuccess) {
-        setError("All requests failed. Check the token address and try again.");
-      } else {
-        setData(result);
-        updateUrl(target);
-        setRecent((prev) => [target, ...prev.filter((c) => c !== target)].slice(0, 5));
-      }
+      await Promise.allSettled([
+        settle<TokenScan>("scan", `${apiUrl}/v1/tokens/${target}`),
+        settle<Accumulation>("accumulation", `${apiUrl}/v1/tokens/${target}/accumulation`),
+        settle<Holders>("holders", `${apiUrl}/v1/tokens/${target}/holders`),
+        settle<EarlyBuyer[]>("earlyBuyers", `${apiUrl}/v1/tokens/${target}/early-buyers`),
+        settle<SocialAnalysis>("social", `${apiUrl}/v1/tokens/${target}/social`),
+        settle<ClusterAnalysis>("clusters", `${apiUrl}/v1/tokens/${target}/clusters`),
+        settle<Intelligence>("intelligence", `${apiUrl}/v1/tokens/${target}/intelligence`),
+      ]);
     } catch (e) {
       setError((e as Error).message || "Something went wrong.");
     } finally {
@@ -348,20 +351,20 @@ export function TokenIntel() {
         </div>
       )}
 
-      {/* Loading */}
-      {loading && (
+      {/* Loading — only show spinner when no data yet */}
+      {loading && !data && (
         <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
           <Loader2 size={22} className="animate-spin text-accent" />
           <p className="text-sm text-text-secondary">Analyzing token...</p>
         </div>
       )}
 
-      {/* Results */}
-      {data && !loading && (
+      {/* Results — render as soon as data exists (even while still loading) */}
+      {data && (
         <div className="space-y-6">
           {/* Sub-tabs */}
           <div
-            className="flex gap-1 overflow-x-auto pb-1 scrollbar-none"
+            className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none"
             role="tablist"
           >
             {SUB_TABS.map((tab) => {
@@ -385,14 +388,15 @@ export function TokenIntel() {
                 </button>
               );
             })}
+            {loading && <Loader2 size={12} className="animate-spin text-accent" />}
           </div>
 
           {/* Sub-tab content */}
-          {activeTab === "overview" && <IntelOverview data={data} />}
-          {activeTab === "social" && <IntelSocial data={data} />}
-          {activeTab === "holders" && <IntelHolders data={data} />}
-          {activeTab === "buyers" && <IntelBuyers data={data} />}
-          {activeTab === "ai" && <IntelAI data={data} />}
+          {activeTab === "overview" && <IntelOverview data={data} pending={pending} />}
+          {activeTab === "social" && <IntelSocial data={data} pending={pending} />}
+          {activeTab === "holders" && <IntelHolders data={data} pending={pending} />}
+          {activeTab === "buyers" && <IntelBuyers data={data} pending={pending} />}
+          {activeTab === "ai" && <IntelAI data={data} pending={pending} />}
         </div>
       )}
 

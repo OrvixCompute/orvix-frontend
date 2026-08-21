@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils/cn";
 import { ScoreGauge, MetricCard } from "@/components/dashboard/playground/intel-shared";
@@ -25,8 +26,17 @@ const SENTIMENT_STYLES = {
   negative: "border-danger/30 text-danger",
 } as const;
 
-export function IntelSocial({ data }: { data: IntelData }) {
+export function IntelSocial({ data, pending }: { data: IntelData; pending: Set<string> }) {
   const { social } = data;
+  const socialLoading = pending.has("social");
+
+  if (socialLoading) {
+    return (
+      <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-bg-secondary py-16 text-xs text-text-muted">
+        <Loader2 size={14} className="animate-spin" /> Loading social data...
+      </div>
+    );
+  }
 
   if (!social) {
     return (

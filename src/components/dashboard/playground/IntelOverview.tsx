@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils/cn";
 import { ScoreGauge, MetricCard } from "@/components/dashboard/playground/intel-shared";
@@ -36,8 +37,10 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
   );
 }
 
-export function IntelOverview({ data }: { data: IntelData }) {
+export function IntelOverview({ data, pending }: { data: IntelData; pending: Set<string> }) {
   const { scan, accumulation } = data;
+  const scanLoading = pending.has("scan");
+  const accLoading = pending.has("accumulation");
 
   return (
     <div className="space-y-4">
@@ -47,7 +50,11 @@ export function IntelOverview({ data }: { data: IntelData }) {
           <div className="mb-3 text-[11px] font-medium uppercase tracking-wide text-text-muted">
             Token Info
           </div>
-          {scan ? (
+          {scanLoading ? (
+            <div className="flex items-center gap-2 py-8 text-xs text-text-muted">
+              <Loader2 size={14} className="animate-spin" /> Loading token data...
+            </div>
+          ) : scan ? (
             <div className="space-y-3">
               <div>
                 <div className="text-lg font-semibold text-text-primary">
@@ -115,7 +122,11 @@ export function IntelOverview({ data }: { data: IntelData }) {
           <div className="mb-3 text-[11px] font-medium uppercase tracking-wide text-text-muted">
             Accumulation Score
           </div>
-          {accumulation ? (
+          {accLoading ? (
+            <div className="flex items-center gap-2 py-8 text-xs text-text-muted">
+              <Loader2 size={14} className="animate-spin" /> Loading accumulation data...
+            </div>
+          ) : accumulation ? (
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <ScoreGauge value={accumulation.score} />
