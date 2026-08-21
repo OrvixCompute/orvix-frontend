@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clapperboard, ImageIcon, MessageSquare } from "lucide-react";
+import { Clapperboard, ImageIcon, MessageSquare, Search } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { cn } from "@/lib/utils/cn";
 import { ChatPanel } from "@/components/dashboard/playground/ChatPanel";
 import { ImagePanel } from "@/components/dashboard/playground/ImagePanel";
 import { VideoPanel } from "@/components/dashboard/playground/VideoPanel";
+import { TokenIntel } from "@/components/dashboard/playground/TokenIntel";
 
-type Mode = "chat" | "image" | "video";
+type Mode = "chat" | "image" | "video" | "intel";
 
 const TABS: { id: Mode; label: string; icon: typeof MessageSquare }[] = [
   { id: "chat", label: "Chat", icon: MessageSquare },
@@ -16,9 +17,10 @@ const TABS: { id: Mode; label: string; icon: typeof MessageSquare }[] = [
   // The tab itself is always selectable: VideoPanel checks the live catalog on
   // mount and shows either the working form or an honest "not here yet" state.
   { id: "video", label: "Video", icon: Clapperboard },
+  { id: "intel", label: "Intel", icon: Search },
 ];
 
-const MODES: Mode[] = ["chat", "image", "video"];
+const MODES: Mode[] = ["chat", "image", "video", "intel"];
 
 /** The inference playground: Chat, Image, and Video run against the network.
  *  The active tab is reflected in the URL (?mode=image) so it can be linked
@@ -83,6 +85,7 @@ export function Playground({ subtitle }: { subtitle?: string }) {
       {mode === "chat" && <ChatPanel />}
       {mode === "image" && <ImagePanel />}
       {mode === "video" && <VideoPanel />}
+      {mode === "intel" && <TokenIntel />}
     </div>
   );
 }
